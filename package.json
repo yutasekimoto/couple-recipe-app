@@ -1,0 +1,13 @@
+{
+  "name": "new-app-project",
+  "version": "1.0.0",
+  "description": "個人開発の新しいアプリ",
+  "main": "index.html",
+  "scripts": {
+    "start": "open index.html",
+    "dev": "python -m http.server 8000"
+  },
+  "keywords": ["個人開発", "アプリ"],
+  "author": "",
+  "license": "MIT"
+}
