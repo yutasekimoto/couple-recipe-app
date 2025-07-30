@@ -11,6 +11,7 @@ class CoupleRecipeApp {
     this.tags = [];
     this.mealPlans = [];
     this.pendingMealPlan = null; // 献立作成中のレシピ追加用
+    this.hiddenMealSlots = new Set(); // 非表示にした献立枠を管理
     
     this.init();
   }
@@ -312,6 +313,20 @@ class CoupleRecipeApp {
       this.recipes = recipes || [];
       this.tags = tags || [];
       this.mealPlans = mealPlans || [];
+
+      // 非表示設定をローカルストレージから復元
+      const savedHiddenSlots = localStorage.getItem('hiddenMealSlots');
+      if (savedHiddenSlots) {
+        try {
+          const hiddenSlots = JSON.parse(savedHiddenSlots);
+          this.hiddenMealSlots = new Set(hiddenSlots);
+        } catch (error) {
+          console.warn('非表示設定の復元に失敗:', error);
+          this.hiddenMealSlots = new Set();
+        }
+      } else {
+        this.hiddenMealSlots = new Set();
+      }
 
       // UI更新
       this.renderRecipes();
@@ -667,30 +682,43 @@ class CoupleRecipeApp {
             ${isTomorrow ? '<span class="tomorrow-badge">翌日</span>' : ''}
           </div>
           <div class="day-meals">
+            ${!this.hiddenMealSlots.has(`${dateStr}-lunch`) ? `
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">昼</span>
-                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>
+                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を非表示にする（外食等）">🗑️</button>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
               </div>
-            </div>
+            </div>` : ''}
+            ${!this.hiddenMealSlots.has(`${dateStr}-dinner`) ? `
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">夜</span>
-                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>
+                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を非表示にする（外食等）">🗑️</button>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
               </div>
-            </div>
+            </div>` : ''}
           </div>
         </div>
       `;
     });
 
     container.innerHTML = mealPlansHtml;
+  }
+  
+  // 非表示にした献立枠を再表示する機能
+  showMealType(date, mealType) {
+    const slotKey = `${date}-${mealType}`;
+    this.hiddenMealSlots.delete(slotKey);
+    
+    // ローカルストレージを更新
+    localStorage.setItem('hiddenMealSlots', JSON.stringify([...this.hiddenMealSlots]));
+    
+    this.renderMealPlans();
   }
 
   renderMealTypeItems(mealPlans, date, mealType) {
@@ -924,9 +952,10 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     }
   }
 
-  // 枠ごと削除機能
+  // 枠ごと非表示機能（外食等で献立不要な場合）
   async deleteMealType(date, mealType) {
     try {
+      // まず既存の献立があれば削除
       const { error } = await supabaseClient
         .from('meal_plans')
         .delete()
@@ -935,10 +964,15 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
         
       if (error) throw error;
       
+      // その後、その枠を非表示にする
+      const slotKey = `${date}-${mealType}`;
+      this.hiddenMealSlots.add(slotKey);
+      
+      // ローカルストレージに保存
+      localStorage.setItem('hiddenMealSlots', JSON.stringify([...this.hiddenMealSlots]));
+      
       await this.loadAppData();
-      if (this.currentView === 'calendar') {
-        this.renderMealPlans();
-      }
+      this.renderMealPlans();
     } catch (error) {
       console.error('献立削除エラー:', error);
       this.showMessage('献立の削除に失敗しました', 'error');
@@ -1171,4 +1205,21 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       
       this.showMessage('タグ名を更新しました', 'success');
     } catch (error) {
-      console.error('タグ名更新エラー:', er
+      console.error('タグ名更新エラー:', error);
+      this.showMessage('タグ名の更新に失敗しました', 'error');
+      this.renderTagCheckboxes(); // 元に戻す
+    }
+  }
+}
+
+// アプリ初期化
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+  app = new CoupleRecipeApp();
+});
+
+// グローバル関数（HTMLから呼び出し用）
+window.app = null;
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = app;
+});
