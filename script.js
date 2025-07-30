@@ -131,7 +131,12 @@ class CoupleRecipeApp {
 
     // ビュー別の初期化処理
     if (viewName === 'calendar') {
-      this.renderMealPlans();
+      // データが既に読み込まれている場合は即座に表示、そうでなければ読み込む
+      if (this.mealPlans && this.mealPlans.length >= 0) {
+        this.renderMealPlans();
+      } else {
+        this.loadAppData().then(() => this.renderMealPlans());
+      }
     }
   }
 
@@ -701,6 +706,10 @@ DatabaseHelper.getMealPlans(
       
       // データを再読み込みしてUIを更新
       await this.loadAppData();
+      // 献立ビューを表示中の場合はレンダリングを更新
+      if (this.currentView === 'calendar') {
+        this.renderMealPlans();
+      }
 
     } catch (error) {
       console.error('献立保存エラー:', error);
@@ -761,6 +770,10 @@ DatabaseHelper.getMealPlans(
       
       this.showMessage('献立を更新しました', 'success');
       await this.loadAppData();
+      // 献立ビューを表示中の場合はレンダリングを更新
+      if (this.currentView === 'calendar') {
+        this.renderMealPlans();
+      }
     } catch (error) {
       console.error('献立更新エラー:', error);
       this.showMessage('献立の更新に失敗しました', 'error');
@@ -773,17 +786,36 @@ DatabaseHelper.getMealPlans(
       const recipeSelect = element.querySelector('.recipe-select');
       const notesInput = element.querySelector('.meal-notes-input');
       
-      await this.updateMealPlan(
-        mealPlanId, 
-        recipeSelect ? recipeSelect.value : null,
-        notesInput ? notesInput.value : null
-      );
+      const updateData = {};
+      if (recipeSelect) updateData.recipe_id = recipeSelect.value || null;
+      if (notesInput) updateData.notes = notesInput.value.trim() || null;
+
+      try {
+        const { error } = await supabaseClient
+          .from('meal_plans')
+          .update(updateData)
+          .eq('id', mealPlanId);
+
+        if (error) throw error;
+        
+        this.showMessage('献立を更新しました', 'success');
+        await this.loadAppData();
+        if (this.currentView === 'calendar') {
+          this.renderMealPlans();
+        }
+      } catch (error) {
+        console.error('献立更新エラー:', error);
+        this.showMessage('献立の更新に失敗しました', 'error');
+      }
     }
   }
 
-  cancelEdit(mealPlanId) {
+  async cancelEdit(mealPlanId) {
     // キャンセル時は単純にデータを再読み込みして表示を戻す
-    this.loadAppData();
+    await this.loadAppData();
+    if (this.currentView === 'calendar') {
+      this.renderMealPlans();
+    }
   }
 
   async deleteMealPlan(mealPlanId) {
@@ -801,6 +833,10 @@ DatabaseHelper.getMealPlans(
       
       this.showMessage('献立を削除しました', 'success');
       await this.loadAppData();
+      // 献立ビューを表示中の場合はレンダリングを更新
+      if (this.currentView === 'calendar') {
+        this.renderMealPlans();
+      }
     } catch (error) {
       console.error('献立削除エラー:', error);
       this.showMessage('献立の削除に失敗しました', 'error');
