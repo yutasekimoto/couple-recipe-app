@@ -519,6 +519,12 @@ body {
     border-color: #4F8BE8;
 }
 
+.meal-plan-day.tomorrow {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(32, 201, 151, 0.05));
+    border-color: #28A745;
+    border-width: 2px;
+}
+
 .day-header {
     display: flex;
     align-items: center;
@@ -535,6 +541,15 @@ body {
 
 .today-badge {
     background: #4F8BE8;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tomorrow-badge {
+    background: #28A745;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -578,6 +593,10 @@ body {
     border-left: 4px solid #4F8BE8;
 }
 
+.meal-plan-item[data-meal-id] {
+    position: relative;
+}
+
 .meal-info {
     flex: 1;
 }
@@ -602,22 +621,59 @@ body {
 .meal-plan-empty {
     background: #F8F9FA;
     border: 2px dashed #E0E0E0;
-    padding: 16px;
+    padding: 12px;
     border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
     transition: all 0.2s ease;
-    color: #999999;
 }
 
 .meal-plan-empty:hover {
-    background: rgba(79, 139, 232, 0.1);
+    background: rgba(79, 139, 232, 0.05);
     border-color: #4F8BE8;
-    color: #4F8BE8;
 }
 
-.meal-plan-empty span {
-    font-weight: 500;
+.meal-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.recipe-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.recipe-select:focus {
+    outline: none;
+    border-color: #4F8BE8;
+    box-shadow: 0 0 0 2px rgba(79, 139, 232, 0.1);
+}
+
+.meal-notes-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.meal-notes-input:focus {
+    outline: none;
+    border-color: #4F8BE8;
+    box-shadow: 0 0 0 2px rgba(79, 139, 232, 0.1);
+}
+
+.meal-notes-input::placeholder {
+    color: #999999;
 }
 
 /* ===== モーダル ===== */

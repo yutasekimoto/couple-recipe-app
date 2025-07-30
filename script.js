@@ -94,17 +94,11 @@ class CoupleRecipeApp {
       this.filterRecipes(e.target.value);
     });
 
-    // 献立関連
-    document.getElementById('add-meal-plan-btn')?.addEventListener('click', () => this.showMealPlanModal());
-    document.getElementById('close-meal-plan-modal')?.addEventListener('click', () => this.hideMealPlanModal());
-    document.getElementById('cancel-meal-plan')?.addEventListener('click', () => this.hideMealPlanModal());
-    document.getElementById('save-meal-plan')?.addEventListener('click', () => this.saveMealPlan());
 
     // モーダル外クリックで閉じる
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('modal')) {
         this.hideRecipeModal();
-        this.hideMealPlanModal();
       }
     });
   }
@@ -533,16 +527,6 @@ class CoupleRecipeApp {
   renderMealPlans() {
     const container = document.getElementById('meal-plans-list');
     
-    if (this.mealPlans.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <p>まだ献立がありません</p>
-          <p>今週の献立を追加してみましょう！</p>
-        </div>
-      `;
-      return;
-    }
-
     // 日付でグループ化
     const groupedMealPlans = {};
     this.mealPlans.forEach(mp => {
@@ -552,28 +536,28 @@ class CoupleRecipeApp {
       groupedMealPlans[mp.date][mp.meal_type] = mp;
     });
 
-    // 今日から1週間分の日付を生成
+    // 翌日から1週間分の日付を生成（最上部は翌日）
     const dates = [];
     const today = new Date();
-    for (let i = 0; i < 7; i++) {
+    for (let i = 1; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       dates.push(date);
     }
 
     let mealPlansHtml = '';
-    dates.forEach(date => {
+    dates.forEach((date, index) => {
       const dateStr = date.toISOString().split('T')[0];
       const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-      const isToday = dateStr === today.toISOString().split('T')[0];
+      const isTomorrow = index === 0; // 最初のアイテムが翌日
       
       const dayMeals = groupedMealPlans[dateStr] || {};
       
       mealPlansHtml += `
-        <div class="meal-plan-day ${isToday ? 'today' : ''}">
+        <div class="meal-plan-day ${isTomorrow ? 'tomorrow' : ''}">
           <div class="day-header">
             <h3>${date.getMonth() + 1}/${date.getDate()} (${dayOfWeek})</h3>
-            ${isToday ? '<span class="today-badge">今日</span>' : ''}
+            ${isTomorrow ? '<span class="tomorrow-badge">翌日</span>' : ''}
           </div>
           <div class="day-meals">
             <div class="meal-item">
@@ -599,7 +583,7 @@ class CoupleRecipeApp {
   renderMealPlanItem(mealPlan, date, mealType) {
     if (mealPlan) {
       return `
-        <div class="meal-plan-item">
+        <div class="meal-plan-item" data-meal-id="${mealPlan.id}">
           <div class="meal-info">
             ${mealPlan.recipes ? 
               `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
@@ -615,100 +599,75 @@ class CoupleRecipeApp {
       `;
     } else {
       return `
-        <div class="meal-plan-empty" onclick="window.app.addMealPlan('${date}', '${mealType}')">
-          <span>+ 献立を追加</span>
+        <div class="meal-plan-empty">
+          <div class="meal-slot">
+            <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value)">
+              <option value="">レシピを選択</option>
+              ${this.recipes.map(recipe => 
+                `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`
+              ).join('')}
+            </select>
+            <textarea class="meal-notes-input" placeholder="メモを入力" 
+                      onblur="window.app.saveMealFromSlot('${date}', '${mealType}', this)"></textarea>
+          </div>
         </div>
       `;
     }
   }
 
-  showMealPlanModal(mealPlan = null, date = null, mealType = null) {
-    const modal = document.getElementById('meal-plan-modal');
-    const form = document.getElementById('meal-plan-form');
-    
-    // 編集中の献立IDを保存
-    this.editingMealPlanId = mealPlan ? mealPlan.id : null;
-    
-    if (mealPlan) {
-      // 編集モード
-      document.getElementById('meal-plan-modal-title').textContent = '献立編集';
-      document.getElementById('meal-plan-date').value = mealPlan.date;
-      document.getElementById('meal-plan-type').value = mealPlan.meal_type;
-      document.getElementById('meal-plan-recipe').value = mealPlan.recipe_id || '';
-      document.getElementById('meal-plan-notes').value = mealPlan.notes || '';
-    } else {
-      // 新規追加モード
-      document.getElementById('meal-plan-modal-title').textContent = '献立追加';
-      form.reset();
-      if (date) document.getElementById('meal-plan-date').value = date;
-      if (mealType) document.getElementById('meal-plan-type').value = mealType;
+  selectRecipe(date, mealType, recipeId) {
+    if (recipeId) {
+      // レシピが選択された場合、すぐに保存
+      this.saveMealPlan(date, mealType, recipeId, null);
     }
-
-    this.renderRecipeOptions();
-    modal.classList.remove('hidden');
   }
 
-  hideMealPlanModal() {
-    document.getElementById('meal-plan-modal').classList.add('hidden');
+  saveMealFromSlot(date, mealType, notesElement) {
+    const notes = notesElement.value.trim();
+    if (notes) {
+      // メモが入力された場合、保存
+      this.saveMealPlan(date, mealType, null, notes);
+    }
   }
 
-  renderRecipeOptions() {
-    const select = document.getElementById('meal-plan-recipe');
-    let optionsHtml = '<option value="">レシピを選択（任意）</option>';
-    
-    this.recipes.forEach(recipe => {
-      optionsHtml += `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`;
-    });
-    
-    select.innerHTML = optionsHtml;
-  }
-
-  addMealPlan(date, mealType) {
-    this.showMealPlanModal(null, date, mealType);
-  }
-
-  async saveMealPlan() {
-    const form = document.getElementById('meal-plan-form');
-    const formData = new FormData(form);
-
+  async saveMealPlan(date, mealType, recipeId, notes) {
     const mealPlanData = {
-      date: document.getElementById('meal-plan-date').value,
-      meal_type: document.getElementById('meal-plan-type').value,
-      recipe_id: document.getElementById('meal-plan-recipe').value || null,
-      notes: document.getElementById('meal-plan-notes').value || null,
+      date: date,
+      meal_type: mealType,
+      recipe_id: recipeId || null,
+      notes: notes || null,
       user_id: this.currentUser.id
     };
 
-    if (!mealPlanData.date || !mealPlanData.meal_type) {
-      this.showMessage('日付と食事を選択してください', 'error');
-      return;
-    }
-
     try {
-      if (this.editingMealPlanId) {
-        // 編集モード
+      // 既存の献立があるかチェック
+      const { data: existingMeal } = await supabaseClient
+        .from('meal_plans')
+        .select('id')
+        .eq('date', date)
+        .eq('meal_type', mealType)
+        .single();
+
+      if (existingMeal) {
+        // 既存の献立を更新
         const { error } = await supabaseClient
           .from('meal_plans')
           .update(mealPlanData)
-          .eq('id', this.editingMealPlanId);
+          .eq('id', existingMeal.id);
 
         if (error) throw error;
-
         this.showMessage('献立を更新しました', 'success');
       } else {
-        // 新規作成モード
+        // 新規作成
         const { error } = await supabaseClient
           .from('meal_plans')
           .insert(mealPlanData);
 
         if (error) throw error;
-
         this.showMessage('献立を追加しました', 'success');
       }
 
-      this.hideMealPlanModal();
       await this.loadAppData();
-      this.editingMealPlanId = null;
 
     } catch (error) {
       console.error('献立保存エラー:', error);
@@ -723,7 +682,52 @@ class CoupleRecipeApp {
       return;
     }
     
-    this.showMealPlanModal(mealPlan);
+    // インライン編集モードに切り替え
+    const mealElement = document.querySelector(`[data-meal-id="${mealPlanId}"]`);
+    if (mealElement) {
+      this.switchToEditMode(mealElement, mealPlan);
+    }
+  }
+
+  switchToEditMode(element, mealPlan) {
+    const mealInfo = element.querySelector('.meal-info');
+    const recipeSelect = this.recipes.map(recipe => 
+      `<option value="${recipe.id}" ${recipe.id === mealPlan.recipe_id ? 'selected' : ''}>
+        ${this.escapeHtml(recipe.title)}
+      </option>`
+    ).join('');
+    
+    mealInfo.innerHTML = `
+      <select class="recipe-select" onchange="window.app.updateMealPlan('${mealPlan.id}', this.value, null)">
+        <option value="">レシピを選択</option>
+        ${recipeSelect}
+      </select>
+      <textarea class="meal-notes-input" placeholder="メモを入力" 
+                onblur="window.app.updateMealPlan('${mealPlan.id}', null, this.value)">
+        ${mealPlan.notes || ''}
+      </textarea>
+    `;
+  }
+
+  async updateMealPlan(mealPlanId, recipeId, notes) {
+    const updateData = {};
+    if (recipeId !== null) updateData.recipe_id = recipeId || null;
+    if (notes !== null) updateData.notes = notes || null;
+
+    try {
+      const { error } = await supabaseClient
+        .from('meal_plans')
+        .update(updateData)
+        .eq('id', mealPlanId);
+
+      if (error) throw error;
+      
+      this.showMessage('献立を更新しました', 'success');
+      await this.loadAppData();
+    } catch (error) {
+      console.error('献立更新エラー:', error);
+      this.showMessage('献立の更新に失敗しました', 'error');
+    }
   }
 
   async deleteMealPlan(mealPlanId) {
