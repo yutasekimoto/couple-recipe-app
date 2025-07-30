@@ -165,20 +165,16 @@
                             <label for="recipe-description">説明</label>
                             <textarea id="recipe-description" rows="3"></textarea>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cooking-time">調理時間（分）</label>
-                                <input type="number" id="cooking-time" min="1">
-                            </div>
-                            <div class="form-group">
-                                <label for="servings">人数</label>
-                                <input type="number" id="servings" min="1" value="2">
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label>タグ</label>
-                            <div class="tag-checkboxes" id="tag-checkboxes">
-                                <!-- タグ選択はJavaScriptで生成 -->
+                            <div class="tag-management">
+                                <div class="tag-checkboxes" id="tag-checkboxes">
+                                    <!-- タグ選択はJavaScriptで生成 -->
+                                </div>
+                                <div class="tag-controls">
+                                    <input type="text" id="new-tag-name" placeholder="新しいタグ名" maxlength="20">
+                                    <button type="button" class="btn btn-secondary" id="add-tag-btn">タグ追加</button>
+                                </div>
                             </div>
                         </div>
                     </form>

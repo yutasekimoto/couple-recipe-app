@@ -707,10 +707,44 @@ body {
     gap: 15px;
 }
 
+.tag-management {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
 .tag-checkboxes {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.tag-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.tag-controls input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #E0E0E0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.tag-controls input:focus {
+    outline: none;
+    border-color: #4F8BE8;
+}
+
+.delete-tag-btn {
+    margin-left: 10px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    background: #DC3545;
+    color: white;
 }
 
 .checkbox-label {
