@@ -369,14 +369,19 @@ DatabaseHelper.getMealPlans(
       this.hideRecipeModal();
       this.showMessage(this.editingRecipeId ? 'レシピを更新しました' : 'レシピを保存しました', 'success');
       
-      if (this.editingRecipeId) {
-        // 編集の場合は全データを再読み込み
-        await this.loadAppData();
-      } else {
-        // 新規作成の場合はリアルタイム更新
-        this.recipes.unshift(savedRecipe);
-        this.renderRecipes();
-        this.renderTagFilters();
+      // 全データを再読み込み（献立画面でも使用されるため）
+      await this.loadAppData();
+      
+      if (!this.editingRecipeId) {
+        // 新規作成の場合はレシピビューの表示も更新
+        if (this.currentView === 'recipes') {
+          this.renderRecipes();
+          this.renderTagFilters();
+        }
+        // 献立ビューの場合はレンダリングを更新
+        if (this.currentView === 'calendar') {
+          this.renderMealPlans();
+        }
       }
       
       this.editingRecipeId = null;
@@ -578,13 +583,19 @@ DatabaseHelper.getMealPlans(
           </div>
           <div class="day-meals">
             <div class="meal-item">
-              <span class="meal-label">昼</span>
+              <div class="meal-header">
+                <span class="meal-label">昼</span>
+                ${dayMeals.lunch && dayMeals.lunch.length > 0 ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>` : ''}
+              </div>
               <div class="meal-content">
                 ${this.renderMealTypeItems(dayMeals.lunch, dateStr, 'lunch')}
               </div>
             </div>
             <div class="meal-item">
-              <span class="meal-label">夜</span>
+              <div class="meal-header">
+                <span class="meal-label">夜</span>
+                ${dayMeals.dinner && dayMeals.dinner.length > 0 ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>` : ''}
+              </div>
               <div class="meal-content">
                 ${this.renderMealTypeItems(dayMeals.dinner, dateStr, 'dinner')}
               </div>
@@ -627,6 +638,8 @@ DatabaseHelper.getMealPlans(
         <div class="meal-slot">
           <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value, this)">
             <option value="">+ レシピを追加</option>
+            <option value="__ADD_NEW__">新たにレシピを作成</option>
+            <option disabled>---</option>
             ${this.recipes.map(recipe => 
               `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`
             ).join('')}
@@ -641,6 +654,13 @@ DatabaseHelper.getMealPlans(
   }
 
   selectRecipe(date, mealType, recipeId, selectElement) {
+    if (recipeId === '__ADD_NEW__') {
+      // 新しいレシピを作成
+      this.showRecipeModal();
+      selectElement.selectedIndex = 0;
+      return;
+    }
+    
     if (recipeId) {
       // レシピが選択された場合、すぐに保存
       const notesElement = selectElement.parentElement.querySelector('.meal-notes-input');
@@ -818,11 +838,28 @@ DatabaseHelper.getMealPlans(
     }
   }
 
-  async deleteMealPlan(mealPlanId) {
-    if (!confirm('この献立を削除しますか？')) {
-      return;
+  // 枠ごと削除機能
+  async deleteMealType(date, mealType) {
+    try {
+      const { error } = await supabaseClient
+        .from('meal_plans')
+        .delete()
+        .eq('date', date)
+        .eq('meal_type', mealType);
+        
+      if (error) throw error;
+      
+      await this.loadAppData();
+      if (this.currentView === 'calendar') {
+        this.renderMealPlans();
+      }
+    } catch (error) {
+      console.error('献立削除エラー:', error);
+      this.showMessage('献立の削除に失敗しました', 'error');
     }
-    
+  }
+
+  async deleteMealPlan(mealPlanId) {
     try {
       const { error } = await supabaseClient
         .from('meal_plans')
@@ -831,7 +868,6 @@ DatabaseHelper.getMealPlans(
         
       if (error) throw error;
       
-      this.showMessage('献立を削除しました', 'success');
       await this.loadAppData();
       // 献立ビューを表示中の場合はレンダリングを更新
       if (this.currentView === 'calendar') {
