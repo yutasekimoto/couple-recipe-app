@@ -124,20 +124,20 @@
                     </div>
                 </div>
 
-                <!-- 献立カレンダー画面 -->
+                <!-- 献立一覧画面 -->
                 <div id="calendar-view" class="view hidden">
                     <div class="view-header">
-                        <h2>献立カレンダー</h2>
-                        <div class="calendar-nav">
-                            <button class="btn-icon" id="prev-month">‹</button>
-                            <span class="current-month" id="current-month">2024年1月</span>
-                            <button class="btn-icon" id="next-month">›</button>
+                        <h2>今週の献立</h2>
+                        <div class="view-actions">
+                            <button class="btn btn-primary" id="add-meal-plan-btn">
+                                献立追加
+                            </button>
                         </div>
                     </div>
 
-                    <div class="calendar-container">
-                        <div class="calendar-grid" id="calendar-grid">
-                            <!-- カレンダーはJavaScriptで生成 -->
+                    <div class="meal-plans-container">
+                        <div class="meal-plans-list" id="meal-plans-list">
+                            <!-- 献立リストはJavaScriptで生成 -->
                         </div>
                     </div>
                 </div>
@@ -186,15 +186,15 @@
             </div>
         </div>
 
-        <!-- エラー・成功メッセージ -->
-        <div id="message-container" class="message-container"></div>
-    </div>
-
-    <!-- Supabase JS -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <!-- アプリの設定 -->
-    <script src="config.js"></script>
-    <!-- メインスクリプト -->
-    <script src="script.js"></script>
-</body>
-</html>
+        <!-- モーダル：献立追加・編集 -->
+        <div id="meal-plan-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="meal-plan-modal-title">献立追加</h3>
+                    <button class="btn-icon modal-close" id="close-meal-plan-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="meal-plan-form">
+                        <div class="form-group">
+                            <label for="meal-plan-date">日付 *</label>
+                            

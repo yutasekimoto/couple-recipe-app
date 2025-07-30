@@ -94,14 +94,17 @@ class CoupleRecipeApp {
       this.filterRecipes(e.target.value);
     });
 
-    // カレンダーナビゲーション
-    document.getElementById('prev-month')?.addEventListener('click', () => this.navigateMonth(-1));
-    document.getElementById('next-month')?.addEventListener('click', () => this.navigateMonth(1));
+    // 献立関連
+    document.getElementById('add-meal-plan-btn')?.addEventListener('click', () => this.showMealPlanModal());
+    document.getElementById('close-meal-plan-modal')?.addEventListener('click', () => this.hideMealPlanModal());
+    document.getElementById('cancel-meal-plan')?.addEventListener('click', () => this.hideMealPlanModal());
+    document.getElementById('save-meal-plan')?.addEventListener('click', () => this.saveMealPlan());
 
     // モーダル外クリックで閉じる
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('modal')) {
         this.hideRecipeModal();
+        this.hideMealPlanModal();
       }
     });
   }
@@ -134,7 +137,7 @@ class CoupleRecipeApp {
 
     // ビュー別の初期化処理
     if (viewName === 'calendar') {
-      this.renderCalendar();
+      this.renderMealPlans();
     }
   }
 
@@ -249,8 +252,8 @@ class CoupleRecipeApp {
         DatabaseHelper.getRecipes(),
         DatabaseHelper.getTags(),
         DatabaseHelper.getMealPlans(
-          this.getMonthStart(this.currentMonth).toISOString().split('T')[0],
-          this.getMonthEnd(this.currentMonth).toISOString().split('T')[0]
+          this.getWeekStart().toISOString().split('T')[0],
+          this.getWeekEnd().toISOString().split('T')[0]
         )
       ]);
 
@@ -526,84 +529,239 @@ class CoupleRecipeApp {
     });
   }
 
-  // ===== カレンダー機能 =====
-  renderCalendar() {
-    const grid = document.getElementById('calendar-grid');
-    const monthSpan = document.getElementById('current-month');
+  // ===== 献立機能 =====
+  renderMealPlans() {
+    const container = document.getElementById('meal-plans-list');
     
-    monthSpan.textContent = `${this.currentMonth.getFullYear()}年${this.currentMonth.getMonth() + 1}月`;
-    
-    const firstDay = this.getMonthStart(this.currentMonth);
-    const lastDay = this.getMonthEnd(this.currentMonth);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - startDate.getDay()); // 週の始まり（日曜日）に調整
-    
-    let calendarHtml = `
-      <div class="calendar-header">
-        <div class="calendar-day-header">日</div>
-        <div class="calendar-day-header">月</div>
-        <div class="calendar-day-header">火</div>
-        <div class="calendar-day-header">水</div>
-        <div class="calendar-day-header">木</div>
-        <div class="calendar-day-header">金</div>
-        <div class="calendar-day-header">土</div>
-      </div>
-    `;
-    
-    const currentDate = new Date(startDate);
-    
-    for (let week = 0; week < 6; week++) {
-      calendarHtml += '<div class="calendar-week">';
+    if (this.mealPlans.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>まだ献立がありません</p>
+          <p>今週の献立を追加してみましょう！</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 日付でグループ化
+    const groupedMealPlans = {};
+    this.mealPlans.forEach(mp => {
+      if (!groupedMealPlans[mp.date]) {
+        groupedMealPlans[mp.date] = {};
+      }
+      groupedMealPlans[mp.date][mp.meal_type] = mp;
+    });
+
+    // 今日から1週間分の日付を生成
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date);
+    }
+
+    let mealPlansHtml = '';
+    dates.forEach(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+      const isToday = dateStr === today.toISOString().split('T')[0];
       
-      for (let day = 0; day < 7; day++) {
-        const isCurrentMonth = currentDate.getMonth() === this.currentMonth.getMonth();
-        const dateStr = currentDate.toISOString().split('T')[0];
-        const dayMealPlans = this.mealPlans.filter(mp => mp.date === dateStr);
-        
-        calendarHtml += `
-          <div class="calendar-day ${isCurrentMonth ? '' : 'other-month'}" data-date="${dateStr}">
-            <div class="day-number">${currentDate.getDate()}</div>
-            <div class="day-meals">
-              <div class="meal-slot" data-meal="lunch">
-                <span class="meal-label">昼</span>
-                ${this.renderMealSlot(dayMealPlans.find(mp => mp.meal_type === 'lunch'))}
+      const dayMeals = groupedMealPlans[dateStr] || {};
+      
+      mealPlansHtml += `
+        <div class="meal-plan-day ${isToday ? 'today' : ''}">
+          <div class="day-header">
+            <h3>${date.getMonth() + 1}/${date.getDate()} (${dayOfWeek})</h3>
+            ${isToday ? '<span class="today-badge">今日</span>' : ''}
+          </div>
+          <div class="day-meals">
+            <div class="meal-item">
+              <span class="meal-label">昼</span>
+              <div class="meal-content">
+                ${this.renderMealPlanItem(dayMeals.lunch, dateStr, 'lunch')}
               </div>
-              <div class="meal-slot" data-meal="dinner">
-                <span class="meal-label">夜</span>
-                ${this.renderMealSlot(dayMealPlans.find(mp => mp.meal_type === 'dinner'))}
+            </div>
+            <div class="meal-item">
+              <span class="meal-label">夜</span>
+              <div class="meal-content">
+                ${this.renderMealPlanItem(dayMeals.dinner, dateStr, 'dinner')}
               </div>
             </div>
           </div>
-        `;
-        
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      calendarHtml += '</div>';
-      
-      if (currentDate > lastDay) break;
-    }
-    
-    grid.innerHTML = calendarHtml;
+        </div>
+      `;
+    });
+
+    container.innerHTML = mealPlansHtml;
   }
 
-  renderMealSlot(mealPlan) {
-    if (mealPlan?.recipes) {
+  renderMealPlanItem(mealPlan, date, mealType) {
+    if (mealPlan) {
       return `
-        <div class="meal-content">
-          <span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>
+        <div class="meal-plan-item">
+          <div class="meal-info">
+            ${mealPlan.recipes ? 
+              `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
+              '<span class="meal-title">レシピなし</span>'
+            }
+            ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
+          </div>
+          <div class="meal-actions">
+            <button class="btn-icon" onclick="window.app.editMealPlan('${mealPlan.id}')" title="編集">✏️</button>
+            <button class="btn-icon" onclick="window.app.deleteMealPlan('${mealPlan.id}')" title="削除">🗑️</button>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="meal-plan-empty" onclick="window.app.addMealPlan('${date}', '${mealType}')">
+          <span>+ 献立を追加</span>
         </div>
       `;
     }
-    return '<div class="meal-empty">+</div>';
   }
 
-  navigateMonth(direction) {
-    this.currentMonth.setMonth(this.currentMonth.getMonth() + direction);
-    this.renderCalendar();
+  showMealPlanModal(mealPlan = null, date = null, mealType = null) {
+    const modal = document.getElementById('meal-plan-modal');
+    const form = document.getElementById('meal-plan-form');
+    
+    // 編集中の献立IDを保存
+    this.editingMealPlanId = mealPlan ? mealPlan.id : null;
+    
+    if (mealPlan) {
+      // 編集モード
+      document.getElementById('meal-plan-modal-title').textContent = '献立編集';
+      document.getElementById('meal-plan-date').value = mealPlan.date;
+      document.getElementById('meal-plan-type').value = mealPlan.meal_type;
+      document.getElementById('meal-plan-recipe').value = mealPlan.recipe_id || '';
+      document.getElementById('meal-plan-notes').value = mealPlan.notes || '';
+    } else {
+      // 新規追加モード
+      document.getElementById('meal-plan-modal-title').textContent = '献立追加';
+      form.reset();
+      if (date) document.getElementById('meal-plan-date').value = date;
+      if (mealType) document.getElementById('meal-plan-type').value = mealType;
+    }
+
+    this.renderRecipeOptions();
+    modal.classList.remove('hidden');
+  }
+
+  hideMealPlanModal() {
+    document.getElementById('meal-plan-modal').classList.add('hidden');
+  }
+
+  renderRecipeOptions() {
+    const select = document.getElementById('meal-plan-recipe');
+    let optionsHtml = '<option value="">レシピを選択（任意）</option>';
+    
+    this.recipes.forEach(recipe => {
+      optionsHtml += `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`;
+    });
+    
+    select.innerHTML = optionsHtml;
+  }
+
+  addMealPlan(date, mealType) {
+    this.showMealPlanModal(null, date, mealType);
+  }
+
+  async saveMealPlan() {
+    const form = document.getElementById('meal-plan-form');
+    const formData = new FormData(form);
+
+    const mealPlanData = {
+      date: document.getElementById('meal-plan-date').value,
+      meal_type: document.getElementById('meal-plan-type').value,
+      recipe_id: document.getElementById('meal-plan-recipe').value || null,
+      notes: document.getElementById('meal-plan-notes').value || null,
+      user_id: this.currentUser.id
+    };
+
+    if (!mealPlanData.date || !mealPlanData.meal_type) {
+      this.showMessage('日付と食事を選択してください', 'error');
+      return;
+    }
+
+    try {
+      if (this.editingMealPlanId) {
+        // 編集モード
+        const { error } = await supabaseClient
+          .from('meal_plans')
+          .update(mealPlanData)
+          .eq('id', this.editingMealPlanId);
+
+        if (error) throw error;
+
+        this.showMessage('献立を更新しました', 'success');
+      } else {
+        // 新規作成モード
+        const { error } = await supabaseClient
+          .from('meal_plans')
+          .insert(mealPlanData);
+
+        if (error) throw error;
+
+        this.showMessage('献立を追加しました', 'success');
+      }
+
+      this.hideMealPlanModal();
+      await this.loadAppData();
+      this.editingMealPlanId = null;
+
+    } catch (error) {
+      console.error('献立保存エラー:', error);
+      this.showMessage('献立の保存に失敗しました', 'error');
+    }
+  }
+
+  async editMealPlan(mealPlanId) {
+    const mealPlan = this.mealPlans.find(mp => mp.id === mealPlanId);
+    if (!mealPlan) {
+      this.showMessage('献立が見つかりません', 'error');
+      return;
+    }
+    
+    this.showMealPlanModal(mealPlan);
+  }
+
+  async deleteMealPlan(mealPlanId) {
+    if (!confirm('この献立を削除しますか？')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabaseClient
+        .from('meal_plans')
+        .delete()
+        .eq('id', mealPlanId);
+        
+      if (error) throw error;
+      
+      this.showMessage('献立を削除しました', 'success');
+      await this.loadAppData();
+    } catch (error) {
+      console.error('献立削除エラー:', error);
+      this.showMessage('献立の削除に失敗しました', 'error');
+    }
   }
 
   // ===== ユーティリティ =====
+  getWeekStart() {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate());
+    return start;
+  }
+
+  getWeekEnd() {
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(today.getDate() + 7);
+    return end;
+  }
+
   getMonthStart(date) {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   }

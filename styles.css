@@ -493,124 +493,131 @@ body {
     font-size: 1.1rem;
 }
 
-/* ===== カレンダー ===== */
-.calendar-nav {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.current-month {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #333333;
-    min-width: 120px;
-    text-align: center;
-}
-
-.calendar-container {
+/* ===== 献立リスト ===== */
+.meal-plans-container {
     background: white;
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.calendar-grid {
-    display: grid;
-    gap: 1px;
+.meal-plans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.calendar-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    margin-bottom: 10px;
+.meal-plan-day {
+    border: 1px solid #F0F0F0;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
 }
 
-.calendar-day-header {
-    padding: 15px 5px;
-    text-align: center;
-    font-weight: 600;
-    color: #666666;
-    font-size: 14px;
+.meal-plan-day.today {
+    background: linear-gradient(135deg, rgba(232, 90, 79, 0.05), rgba(79, 139, 232, 0.05));
+    border-color: #4F8BE8;
 }
 
-.calendar-week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
+.day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
-.calendar-day {
-    min-height: 120px;
-    background: #FAFAFA;
-    padding: 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
-}
-
-.calendar-day:hover {
-    background: #F0F0F0;
-}
-
-.calendar-day.other-month {
-    opacity: 0.3;
-}
-
-.day-number {
+.day-header h3 {
+    font-size: 1.2rem;
     font-weight: 600;
     color: #333333;
-    margin-bottom: 8px;
+    margin: 0;
+}
+
+.today-badge {
+    background: #4F8BE8;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .day-meals {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
-.meal-slot {
+.meal-item {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 12px;
+    gap: 12px;
 }
 
 .meal-label {
     font-weight: 600;
     color: #666666;
-    width: 20px;
+    min-width: 30px;
+    text-align: center;
+    background: #F8F9FA;
+    padding: 8px;
+    border-radius: 8px;
 }
 
 .meal-content {
     flex: 1;
+}
+
+.meal-plan-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     background: rgba(79, 139, 232, 0.1);
-    padding: 4px 8px;
-    border-radius: 4px;
-    border-left: 3px solid #4F8BE8;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid #4F8BE8;
+}
+
+.meal-info {
+    flex: 1;
 }
 
 .meal-title {
-    color: #333333;
     font-weight: 500;
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #333333;
+    margin-bottom: 4px;
 }
 
-.meal-empty {
-    flex: 1;
-    color: #999999;
+.meal-notes {
+    font-size: 14px;
+    color: #666666;
+    margin: 0;
+}
+
+.meal-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.meal-plan-empty {
+    background: #F8F9FA;
+    border: 2px dashed #E0E0E0;
+    padding: 16px;
+    border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    color: #999999;
 }
 
-.meal-empty:hover {
+.meal-plan-empty:hover {
     background: rgba(79, 139, 232, 0.1);
+    border-color: #4F8BE8;
+    color: #4F8BE8;
+}
+
+.meal-plan-empty span {
+    font-weight: 500;
 }
 
 /* ===== モーダル ===== */
@@ -897,13 +904,19 @@ body {
         justify-content: center;
     }
     
-    .calendar-day {
-        min-height: 100px;
-        padding: 6px;
+    .meal-plan-day {
+        padding: 12px;
     }
     
-    .calendar-day-header {
-        padding: 12px 5px;
+    .meal-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .meal-label {
+        min-width: auto;
+        align-self: flex-start;
     }
     
     .message-container {
@@ -935,12 +948,11 @@ body {
         padding: 20px;
     }
     
-    .calendar-day {
-        min-height: 80px;
-        padding: 4px;
+    .meal-plan-day {
+        padding: 10px;
     }
     
-    .meal-slot {
-        font-size: 11px;
+    .day-header h3 {
+        font-size: 1rem;
     }
 }
