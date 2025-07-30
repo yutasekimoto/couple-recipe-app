@@ -9,7 +9,7 @@ class CoupleRecipeApp {
     this.currentMonth = new Date();
     this.recipes = [];
     this.tags = [];
-    this.mealPlans = [];
+    this.mealPlans = [];\n    this.pendingMealPlan = null; // 献立作成中のレシピ追加用
     
     this.init();
   }
@@ -382,6 +382,17 @@ DatabaseHelper.getMealPlans(
         if (this.currentView === 'calendar') {
           this.renderMealPlans();
         }
+        
+        // 献立作成中にレシピを作成した場合、その献立に追加
+        if (this.pendingMealPlan) {
+          await this.saveMealPlan(
+            this.pendingMealPlan.date,
+            this.pendingMealPlan.mealType,
+            savedRecipe.id,
+            null
+          );
+          this.pendingMealPlan = null;
+        }
       }
       
       this.editingRecipeId = null;
@@ -573,7 +584,7 @@ DatabaseHelper.getMealPlans(
       const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
       const isTomorrow = index === 0; // 最初のアイテムが翌日
       
-      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };
+      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };\n      console.log(`Debug: ${dateStr} - lunch: ${dayMeals.lunch?.length || 0}, dinner: ${dayMeals.dinner?.length || 0}`);
       
       mealPlansHtml += `
         <div class="meal-plan-day ${isTomorrow ? 'tomorrow' : ''}">
@@ -585,19 +596,19 @@ DatabaseHelper.getMealPlans(
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">昼</span>
-                ${dayMeals.lunch && dayMeals.lunch.length > 0 ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>` : ''}
+${(dayMeals.lunch && dayMeals.lunch.length > 0) ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>` : ''}
               </div>
               <div class="meal-content">
-                ${this.renderMealTypeItems(dayMeals.lunch, dateStr, 'lunch')}
+${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
               </div>
             </div>
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">夜</span>
-                ${dayMeals.dinner && dayMeals.dinner.length > 0 ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>` : ''}
+${(dayMeals.dinner && dayMeals.dinner.length > 0) ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>` : ''}
               </div>
               <div class="meal-content">
-                ${this.renderMealTypeItems(dayMeals.dinner, dateStr, 'dinner')}
+${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
               </div>
             </div>
           </div>
@@ -655,7 +666,8 @@ DatabaseHelper.getMealPlans(
 
   selectRecipe(date, mealType, recipeId, selectElement) {
     if (recipeId === '__ADD_NEW__') {
-      // 新しいレシピを作成
+      // 新しいレシピを作成（献立情報を保存）
+      this.pendingMealPlan = { date, mealType, selectElement };
       this.showRecipeModal();
       selectElement.selectedIndex = 0;
       return;
