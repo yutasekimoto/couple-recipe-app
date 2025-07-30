@@ -631,12 +631,17 @@ class CoupleRecipeApp {
       });
     });
 
-    // 翌日から1週間分の日付を生成（最上部は翌日）
+    // 日付範囲を決定（時間によって変更）
     const dates = [];
-    const today = new Date();
-    for (let i = 1; i <= 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // 21時以前は当日から1週間、以降は翌日から1週間
+    const startOffset = currentHour < 21 ? 0 : 1;
+    
+    for (let i = startOffset; i < startOffset + 7; i++) {
+      const date = new Date(now);
+      date.setDate(now.getDate() + i);
       dates.push(date);
     }
 
@@ -644,21 +649,28 @@ class CoupleRecipeApp {
     dates.forEach((date, index) => {
       const dateStr = date.toISOString().split('T')[0];
       const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-      const isTomorrow = index === 0; // 最初のアイテムが翌日
+      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      
+      const isToday = dateStr === today;
+      const isTomorrow = dateStr === tomorrowStr;
       
       const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };
       
       mealPlansHtml += `
-        <div class="meal-plan-day ${isTomorrow ? 'tomorrow' : ''}">
+        <div class="meal-plan-day ${isToday ? 'today' : ''} ${isTomorrow ? 'tomorrow' : ''}">
           <div class="day-header">
             <h3>${date.getMonth() + 1}/${date.getDate()} (${dayOfWeek})</h3>
+            ${isToday ? '<span class="today-badge">今日</span>' : ''}
             ${isTomorrow ? '<span class="tomorrow-badge">翌日</span>' : ''}
           </div>
           <div class="day-meals">
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">昼</span>
-${(dayMeals.lunch && dayMeals.lunch.length > 0) ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>` : ''}
+                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を全て削除">🗑️</button>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
@@ -667,7 +679,7 @@ ${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">夜</span>
-${(dayMeals.dinner && dayMeals.dinner.length > 0) ? `<button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>` : ''}
+                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を全て削除">🗑️</button>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
@@ -1159,21 +1171,4 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       
       this.showMessage('タグ名を更新しました', 'success');
     } catch (error) {
-      console.error('タグ名更新エラー:', error);
-      this.showMessage('タグ名の更新に失敗しました', 'error');
-      this.renderTagCheckboxes(); // 元に戻す
-    }
-  }
-}
-
-// アプリ初期化
-let app;
-document.addEventListener('DOMContentLoaded', () => {
-  app = new CoupleRecipeApp();
-});
-
-// グローバル関数（HTMLから呼び出し用）
-window.app = null;
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = app;
-});
+      console.error('タグ名更新エラー:', er
