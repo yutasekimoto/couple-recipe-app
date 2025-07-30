@@ -588,7 +588,7 @@ body {
 
 .meal-plan-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     background: rgba(79, 139, 232, 0.1);
     padding: 12px;
@@ -603,6 +603,11 @@ body {
 
 .meal-plan-item[data-meal-id] {
     position: relative;
+}
+
+.meal-plan-item .meal-slot {
+    flex: 1;
+    margin-right: 10px;
 }
 
 .meal-info {
@@ -693,6 +698,19 @@ body {
 
 .meal-notes-input::placeholder {
     color: #999999;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    justify-content: flex-end;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: auto;
 }
 
 /* ===== モーダル ===== */

@@ -596,29 +596,31 @@ DatabaseHelper.getMealPlans(
     let html = '';
     
     // 既存のメニューを表示
-    mealPlans.forEach(mealPlan => {
-      html += `
-        <div class="meal-plan-item" data-meal-id="${mealPlan.id}">
-          <div class="meal-info">
-            ${mealPlan.recipes ? 
-              `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
-              '<span class="meal-title">レシピなし</span>'
-            }
-            ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
+    if (mealPlans && mealPlans.length > 0) {
+      mealPlans.forEach(mealPlan => {
+        html += `
+          <div class="meal-plan-item" data-meal-id="${mealPlan.id}">
+            <div class="meal-info">
+              ${mealPlan.recipes ? 
+                `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
+                '<span class="meal-title">レシピなし</span>'
+              }
+              ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
+            </div>
+            <div class="meal-actions">
+              <button class="btn-icon" onclick="window.app.editMealPlan('${mealPlan.id}')" title="編集">✏️</button>
+              <button class="btn-icon" onclick="window.app.deleteMealPlan('${mealPlan.id}')" title="削除">🗑️</button>
+            </div>
           </div>
-          <div class="meal-actions">
-            <button class="btn-icon" onclick="window.app.editMealPlan('${mealPlan.id}')" title="編集">✏️</button>
-            <button class="btn-icon" onclick="window.app.deleteMealPlan('${mealPlan.id}')" title="削除">🗑️</button>
-          </div>
-        </div>
-      `;
-    });
+        `;
+      });
+    }
     
-    // 新しいメニューを追加するスロット
+    // 新しいメニューを追加するスロット（常に表示）
     html += `
-      <div class="meal-plan-empty">
+      <div class="meal-plan-empty" data-date="${date}" data-meal-type="${mealType}">
         <div class="meal-slot">
-          <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value)">
+          <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value, this)">
             <option value="">+ レシピを追加</option>
             ${this.recipes.map(recipe => 
               `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`
@@ -633,10 +635,16 @@ DatabaseHelper.getMealPlans(
     return html;
   }
 
-  selectRecipe(date, mealType, recipeId) {
+  selectRecipe(date, mealType, recipeId, selectElement) {
     if (recipeId) {
       // レシピが選択された場合、すぐに保存
-      this.saveMealPlan(date, mealType, recipeId, null);
+      const notesElement = selectElement.parentElement.querySelector('.meal-notes-input');
+      const notes = notesElement ? notesElement.value.trim() : null;
+      this.saveMealPlan(date, mealType, recipeId, notes);
+      
+      // 入力フィールドをリセット
+      selectElement.selectedIndex = 0;
+      if (notesElement) notesElement.value = '';
     }
   }
 
@@ -644,40 +652,54 @@ DatabaseHelper.getMealPlans(
     const notes = notesElement.value.trim();
     if (notes) {
       // メモが入力された場合、保存
-      this.saveMealPlan(date, mealType, null, notes);
+      const selectElement = notesElement.parentElement.querySelector('.recipe-select');
+      const recipeId = selectElement && selectElement.value ? selectElement.value : null;
+      this.saveMealPlan(date, mealType, recipeId, notes);
+      
+      // 入力フィールドをリセット
+      notesElement.value = '';
+      if (selectElement) selectElement.selectedIndex = 0;
     }
   }
 
   async saveMealPlan(date, mealType, recipeId, notes) {
-    // 次の順序番号を取得
-    const { data: existingMeals } = await supabaseClient
-      .from('meal_plans')
-      .select('sort_order')
-      .eq('date', date)
-      .eq('meal_type', mealType)
-      .order('sort_order', { ascending: false })
-      .limit(1);
-    
-    const nextSortOrder = existingMeals && existingMeals.length > 0 
-      ? (existingMeals[0].sort_order || 0) + 1 
-      : 0;
-
-    const mealPlanData = {
-      date: date,
-      meal_type: mealType,
-      recipe_id: recipeId || null,
-      notes: notes || null,
-      user_id: this.currentUser.id,
-      sort_order: nextSortOrder
-    };
+    // レシピもメモも空の場合は保存しない
+    if (!recipeId && (!notes || !notes.trim())) {
+      return;
+    }
 
     try {
+      // 次の順序番号を取得
+      const { data: existingMeals } = await supabaseClient
+        .from('meal_plans')
+        .select('sort_order')
+        .eq('date', date)
+        .eq('meal_type', mealType)
+        .order('sort_order', { ascending: false })
+        .limit(1);
+      
+      const nextSortOrder = existingMeals && existingMeals.length > 0 
+        ? (existingMeals[0].sort_order || 0) + 1 
+        : 0;
+
+      const mealPlanData = {
+        date: date,
+        meal_type: mealType,
+        recipe_id: recipeId || null,
+        notes: notes && notes.trim() ? notes.trim() : null,
+        user_id: this.currentUser.id,
+        sort_order: nextSortOrder
+      };
+
       const { error } = await supabaseClient
         .from('meal_plans')
         .insert(mealPlanData);
 
       if (error) throw error;
+      
       this.showMessage('献立を追加しました', 'success');
+      
+      // データを再読み込みしてUIを更新
       await this.loadAppData();
 
     } catch (error) {
@@ -709,21 +731,25 @@ DatabaseHelper.getMealPlans(
     ).join('');
     
     mealInfo.innerHTML = `
-      <select class="recipe-select" onchange="window.app.updateMealPlan('${mealPlan.id}', this.value, null)">
-        <option value="">レシピを選択</option>
-        ${recipeSelect}
-      </select>
-      <textarea class="meal-notes-input" placeholder="メモを入力" 
-                onblur="window.app.updateMealPlan('${mealPlan.id}', null, this.value)">
-        ${mealPlan.notes || ''}
-      </textarea>
+      <div class="meal-slot">
+        <select class="recipe-select" onchange="window.app.updateMealPlan('${mealPlan.id}', this.value, null)">
+          <option value="">レシピを選択</option>
+          ${recipeSelect}
+        </select>
+        <textarea class="meal-notes-input" placeholder="メモを入力" 
+                  onblur="window.app.updateMealPlan('${mealPlan.id}', null, this.value)">${mealPlan.notes || ''}</textarea>
+        <div class="edit-actions">
+          <button class="btn btn-secondary btn-sm" onclick="window.app.cancelEdit('${mealPlan.id}')">キャンセル</button>
+          <button class="btn btn-primary btn-sm" onclick="window.app.saveEdit('${mealPlan.id}')">保存</button>
+        </div>
+      </div>
     `;
   }
 
   async updateMealPlan(mealPlanId, recipeId, notes) {
     const updateData = {};
     if (recipeId !== null) updateData.recipe_id = recipeId || null;
-    if (notes !== null) updateData.notes = notes || null;
+    if (notes !== null) updateData.notes = notes && notes.trim() ? notes.trim() : null;
 
     try {
       const { error } = await supabaseClient
@@ -739,6 +765,25 @@ DatabaseHelper.getMealPlans(
       console.error('献立更新エラー:', error);
       this.showMessage('献立の更新に失敗しました', 'error');
     }
+  }
+
+  async saveEdit(mealPlanId) {
+    const element = document.querySelector(`[data-meal-id="${mealPlanId}"]`);
+    if (element) {
+      const recipeSelect = element.querySelector('.recipe-select');
+      const notesInput = element.querySelector('.meal-notes-input');
+      
+      await this.updateMealPlan(
+        mealPlanId, 
+        recipeSelect ? recipeSelect.value : null,
+        notesInput ? notesInput.value : null
+      );
+    }
+  }
+
+  cancelEdit(mealPlanId) {
+    // キャンセル時は単純にデータを再読み込みして表示を戻す
+    this.loadAppData();
   }
 
   async deleteMealPlan(mealPlanId) {
