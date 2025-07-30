@@ -273,6 +273,9 @@ class CoupleRecipeApp {
     const modal = document.getElementById('recipe-modal');
     const form = document.getElementById('recipe-form');
     
+    // 編集中のレシピIDを保存
+    this.editingRecipeId = recipe ? recipe.id : null;
+    
     if (recipe) {
       // 編集モード
       document.getElementById('recipe-modal-title').textContent = 'レシピ編集';
@@ -310,14 +313,37 @@ class CoupleRecipeApp {
     }
 
     try {
-      // レシピ保存
-      const { data: savedRecipe, error } = await supabaseClient
-        .from('recipes')
-        .insert(recipeData)
-        .select()
-        .single();
+      let savedRecipe;
+      
+      if (this.editingRecipeId) {
+        // 編集モード：既存レシピを更新
+        const { data, error } = await supabaseClient
+          .from('recipes')
+          .update(recipeData)
+          .eq('id', this.editingRecipeId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        savedRecipe = data;
+
+        // 既存のタグ関連付けを削除
+        await supabaseClient
+          .from('recipe_tag_relations')
+          .delete()
+          .eq('recipe_id', this.editingRecipeId);
+
+      } else {
+        // 新規作成モード
+        const { data, error } = await supabaseClient
+          .from('recipes')
+          .insert(recipeData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        savedRecipe = data;
+      }
 
       // タグ関連付け
       const selectedTags = Array.from(document.querySelectorAll('#tag-checkboxes input:checked'))
@@ -339,8 +365,19 @@ class CoupleRecipeApp {
       }
 
       this.hideRecipeModal();
-      this.showMessage('レシピを保存しました', 'success');
-      await this.loadAppData();
+      this.showMessage(this.editingRecipeId ? 'レシピを更新しました' : 'レシピを保存しました', 'success');
+      
+      if (this.editingRecipeId) {
+        // 編集の場合は全データを再読み込み
+        await this.loadAppData();
+      } else {
+        // 新規作成の場合はリアルタイム更新
+        this.recipes.unshift(savedRecipe);
+        this.renderRecipes();
+        this.renderTagFilters();
+      }
+      
+      this.editingRecipeId = null;
 
     } catch (error) {
       console.error('レシピ保存エラー:', error);
@@ -608,3 +645,171 @@ class CoupleRecipeApp {
     
     // タグ情報を取得してからモーダル表示
     try {
+      const { data: recipeWithTags, error } = await supabaseClient
+        .from('recipes')
+        .select(`
+          *,
+          recipe_tag_relations (
+            recipe_tags (
+              id, name, color
+            )
+          )
+        `)
+        .eq('id', recipeId)
+        .single();
+      
+      if (error) throw error;
+      
+      this.showRecipeModal(recipeWithTags);
+    } catch (error) {
+      console.error('レシピ編集エラー:', error);
+      this.showMessage('レシピの読み込みに失敗しました', 'error');
+    }
+  }
+  
+  async deleteRecipe(recipeId) {
+    if (!confirm('このレシピを削除しますか？')) {
+      return;
+    }
+    
+    try {
+      // タグ関連も自動で削除される（ON DELETE CASCADE）
+      const { error } = await supabaseClient
+        .from('recipes')
+        .delete()
+        .eq('id', recipeId);
+      
+      if (error) throw error;
+      
+      // リアルタイム更新：リストから削除
+      this.recipes = this.recipes.filter(r => r.id !== recipeId);
+      this.renderRecipes();
+      
+      this.showMessage('レシピを削除しました', 'success');
+    } catch (error) {
+      console.error('レシピ削除エラー:', error);
+      this.showMessage('レシピの削除に失敗しました', 'error');
+    }
+  }
+
+  // ===== タグ管理機能 =====
+  async addNewTag() {
+    const nameInput = document.getElementById('new-tag-name');
+    const tagName = nameInput.value.trim();
+    
+    if (!tagName) {
+      this.showMessage('タグ名を入力してください', 'error');
+      return;
+    }
+    
+    if (this.tags.some(tag => tag.name === tagName)) {
+      this.showMessage('同じ名前のタグが既に存在します', 'error');
+      return;
+    }
+    
+    try {
+      const colors = ['#4F8BE8', '#E85A4F', '#28A745', '#6F42C1', '#FD7E14', '#20C997'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      const { data: newTag, error } = await supabaseClient
+        .from('recipe_tags')
+        .insert({
+          user_id: this.currentUser.id,
+          name: tagName,
+          color: randomColor
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // リアルタイム更新
+      this.tags.push(newTag);
+      this.renderTagCheckboxes();
+      this.renderTagFilters();
+      
+      nameInput.value = '';
+      this.showMessage('タグを追加しました', 'success');
+    } catch (error) {
+      console.error('タグ追加エラー:', error);
+      this.showMessage('タグの追加に失敗しました', 'error');
+    }
+  }
+  
+  async deleteTag(tagId) {
+    if (!confirm('このタグを削除しますか？関連付けられたレシピからも削除されます。')) {
+      return;
+    }
+    
+    try {
+      // タグ関連付けも自動で削除される（ON DELETE CASCADE）
+      const { error } = await supabaseClient
+        .from('recipe_tags')
+        .delete()
+        .eq('id', tagId);
+        
+      if (error) throw error;
+      
+      // リアルタイム更新
+      this.tags = this.tags.filter(tag => tag.id !== tagId);
+      this.renderTagCheckboxes();
+      this.renderTagFilters();
+      
+      this.showMessage('タグを削除しました', 'success');
+    } catch (error) {
+      console.error('タグ削除エラー:', error);
+      this.showMessage('タグの削除に失敗しました', 'error');
+    }
+  }
+
+  async updateTagName(tagId, newName) {
+    const trimmedName = newName.trim();
+    
+    if (!trimmedName) {
+      this.showMessage('タグ名を空にはできません', 'error');
+      this.renderTagCheckboxes(); // 元に戻す
+      return;
+    }
+    
+    // 同じ名前のタグが既に存在するかチェック（自身は除く）
+    if (this.tags.some(tag => tag.name === trimmedName && tag.id !== tagId)) {
+      this.showMessage('同じ名前のタグが既に存在します', 'error');
+      this.renderTagCheckboxes(); // 元に戻す
+      return;
+    }
+    
+    try {
+      const { error } = await supabaseClient
+        .from('recipe_tags')
+        .update({ name: trimmedName })
+        .eq('id', tagId);
+        
+      if (error) throw error;
+      
+      // リアルタイム更新
+      const tagIndex = this.tags.findIndex(tag => tag.id === tagId);
+      if (tagIndex !== -1) {
+        this.tags[tagIndex].name = trimmedName;
+        this.renderTagFilters();
+      }
+      
+      this.showMessage('タグ名を更新しました', 'success');
+    } catch (error) {
+      console.error('タグ名更新エラー:', error);
+      this.showMessage('タグ名の更新に失敗しました', 'error');
+      this.renderTagCheckboxes(); // 元に戻す
+    }
+  }
+}
+
+// アプリ初期化
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+  app = new CoupleRecipeApp();
+});
+
+// グローバル関数（HTMLから呼び出し用）
+window.app = null;
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = app;
+});
