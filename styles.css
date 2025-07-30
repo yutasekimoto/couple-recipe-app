@@ -719,6 +719,19 @@ body {
     gap: 10px;
 }
 
+.tag-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.tag-item:hover {
+    background: #F8F9FA;
+}
+
 .tag-controls {
     display: flex;
     gap: 10px;
@@ -738,13 +751,35 @@ body {
     border-color: #4F8BE8;
 }
 
-.delete-tag-btn {
-    margin-left: 10px;
-    width: 20px;
-    height: 20px;
+.tag-name-input {
+    border: none;
+    background: transparent;
+    font-weight: 500;
     font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    width: 150px;
+}
+
+.tag-name-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 2px rgba(79, 139, 232, 0.3);
+}
+
+.delete-tag-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
     background: #DC3545;
     color: white;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.delete-tag-btn:hover {
+    background: #C82333;
 }
 
 .checkbox-label {
@@ -752,9 +787,7 @@ body {
     align-items: center;
     gap: 10px;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    flex: 1;
 }
 
 .checkbox-label:hover {
