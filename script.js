@@ -16,51 +16,94 @@ class CoupleRecipeApp {
 
   async init() {
     try {
-      // Supabase初期化
+      console.log('アプリ初期化開始...');
+      
+      // タイムアウト付きでSupabase初期化
+      const initTimeout = setTimeout(() => {
+        console.error('初期化タイムアウト - フォールバックします');
+        this.fallbackInit();
+      }, 10000); // 10秒タイムアウト
+      
+      console.log('Supabase初期化中...');
       await initializeSupabase();
+      console.log('Supabase初期化完了');
+      
       this.authManager = new AuthManager();
+      console.log('AuthManager作成完了');
 
       // 認証・ペアリング確認
+      console.log('認証チェック開始...');
       await this.checkAuthAndPairing();
+      console.log('認証チェック完了');
 
       // イベントリスナー設定
+      console.log('イベントリスナー設定中...');
       this.setupEventListeners();
+      console.log('アプリ初期化完了');
+      
+      clearTimeout(initTimeout);
 
     } catch (error) {
       console.error('アプリ初期化エラー:', error);
-      this.showMessage('アプリの初期化に失敗しました', 'error');
+      this.fallbackInit();
     }
+  }
+  
+  fallbackInit() {
+    console.log('フォールバック初期化を実行...');
+    this.showScreen('pairing');
+    this.setupEventListeners();
+    this.showMessage('初期化に時間がかかっています。しばらくお待ちください。', 'info');
   }
 
   async checkAuthAndPairing() {
     try {
+      console.log('匿名認証開始...');
       // 匿名認証
-      const user = await this.authManager.signInAnonymously();
+      const user = await Promise.race([
+        this.authManager.signInAnonymously(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('認証タイムアウト')), 8000))
+      ]);
+      
       if (!user) {
         throw new Error('認証に失敗しました');
       }
+      console.log('匿名認証完了');
 
+      console.log('ユーザープロファイル確認中...');
       // ユーザープロファイル確認・作成
-      this.currentUser = await this.authManager.ensureUserProfile();
+      this.currentUser = await Promise.race([
+        this.authManager.ensureUserProfile(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('プロファイル作成タイムアウト')), 5000))
+      ]);
+      
       if (!this.currentUser) {
         throw new Error('ユーザープロファイルの作成に失敗しました');
       }
+      console.log('ユーザープロファイル作成完了');
 
+      console.log('ペアリング状態確認中...');
       // ペアリング状態確認
-      const pairingStatus = await this.authManager.checkPairingStatus();
+      const pairingStatus = await Promise.race([
+        this.authManager.checkPairingStatus(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('ペアリング確認タイムアウト')), 5000))
+      ]);
       
       if (pairingStatus?.paired_with) {
+        console.log('ペア済み - データ読み込み中...');
         // ペア済み - メインアプリを表示
         await this.loadAppData();
         this.showScreen('main');
+        console.log('メイン画面表示完了');
       } else {
+        console.log('未ペア - ペアリング画面表示');
         // 未ペア - ペアリング画面を表示
         this.showScreen('pairing');
       }
 
     } catch (error) {
       console.error('認証・ペアリング確認エラー:', error);
-      this.showMessage('認証エラーが発生しました', 'error');
+      this.showMessage(`認証エラー: ${error.message}`, 'error');
       this.showScreen('pairing');
     }
   }
@@ -246,27 +289,45 @@ class CoupleRecipeApp {
   // ===== データ管理 =====
   async loadAppData() {
     try {
-      // 並列でデータを取得
-      const [recipes, tags, mealPlans] = await Promise.all([
-        DatabaseHelper.getRecipes(),
-        DatabaseHelper.getTags(),
-DatabaseHelper.getMealPlans(
-          this.getWeekStart().toISOString().split('T')[0],
-          this.getWeekEnd().toISOString().split('T')[0]
+      console.log('アプリデータ読み込み開始...');
+      
+      // 並列でデータを取得（タイムアウト付き）
+      const [recipes, tags, mealPlans] = await Promise.race([
+        Promise.all([
+          DatabaseHelper.getRecipes(),
+          DatabaseHelper.getTags(),
+          DatabaseHelper.getMealPlans(
+            this.getWeekStart().toISOString().split('T')[0],
+            this.getWeekEnd().toISOString().split('T')[0]
+          )
+        ]),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('データ読み込みタイムアウト')), 10000)
         )
       ]);
 
-      this.recipes = recipes;
-      this.tags = tags;
-      this.mealPlans = mealPlans;
+      console.log(`データ取得結果: レシピ${recipes?.length || 0}件, タグ${tags?.length || 0}件, 献立${mealPlans?.length || 0}件`);
+
+      this.recipes = recipes || [];
+      this.tags = tags || [];
+      this.mealPlans = mealPlans || [];
 
       // UI更新
       this.renderRecipes();
       this.renderTagFilters();
+      
+      console.log('アプリデータ読み込み完了');
 
     } catch (error) {
       console.error('データ読み込みエラー:', error);
-      this.showMessage('データの読み込みに失敗しました', 'error');
+      this.showMessage(`データ読み込みエラー: ${error.message}`, 'error');
+      
+      // エラー時はデフォルト値を設定
+      this.recipes = [];
+      this.tags = [];
+      this.mealPlans = [];
+      this.renderRecipes();
+      this.renderTagFilters();
     }
   }
 
@@ -584,7 +645,7 @@ DatabaseHelper.getMealPlans(
       const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
       const isTomorrow = index === 0; // 最初のアイテムが翌日
       
-      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };\n      console.log(`Debug: ${dateStr} - lunch: ${dayMeals.lunch?.length || 0}, dinner: ${dayMeals.dinner?.length || 0}`);
+      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };
       
       mealPlansHtml += `
         <div class="meal-plan-day ${isTomorrow ? 'tomorrow' : ''}">
