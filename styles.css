@@ -581,6 +581,9 @@ body {
 
 .meal-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .meal-plan-item {
@@ -591,6 +594,11 @@ body {
     padding: 12px;
     border-radius: 8px;
     border-left: 4px solid #4F8BE8;
+    margin-bottom: 8px;
+}
+
+.meal-plan-item:last-of-type {
+    margin-bottom: 0;
 }
 
 .meal-plan-item[data-meal-id] {
@@ -624,11 +632,16 @@ body {
     padding: 12px;
     border-radius: 8px;
     transition: all 0.2s ease;
+    margin-top: 8px;
 }
 
 .meal-plan-empty:hover {
     background: rgba(79, 139, 232, 0.05);
     border-color: #4F8BE8;
+}
+
+.meal-plan-empty:first-child {
+    margin-top: 0;
 }
 
 .meal-slot {
@@ -646,6 +659,12 @@ body {
     background: white;
     cursor: pointer;
     transition: border-color 0.2s ease;
+    color: #666666;
+}
+
+.recipe-select option:first-child {
+    color: #4F8BE8;
+    font-weight: 500;
 }
 
 .recipe-select:focus {

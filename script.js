@@ -245,7 +245,7 @@ class CoupleRecipeApp {
       const [recipes, tags, mealPlans] = await Promise.all([
         DatabaseHelper.getRecipes(),
         DatabaseHelper.getTags(),
-        DatabaseHelper.getMealPlans(
+DatabaseHelper.getMealPlans(
           this.getWeekStart().toISOString().split('T')[0],
           this.getWeekEnd().toISOString().split('T')[0]
         )
@@ -527,13 +527,25 @@ class CoupleRecipeApp {
   renderMealPlans() {
     const container = document.getElementById('meal-plans-list');
     
-    // 日付でグループ化
+    // 日付でグループ化（複数メニュー対応）
     const groupedMealPlans = {};
     this.mealPlans.forEach(mp => {
       if (!groupedMealPlans[mp.date]) {
-        groupedMealPlans[mp.date] = {};
+        groupedMealPlans[mp.date] = { lunch: [], dinner: [] };
       }
-      groupedMealPlans[mp.date][mp.meal_type] = mp;
+      if (!groupedMealPlans[mp.date][mp.meal_type]) {
+        groupedMealPlans[mp.date][mp.meal_type] = [];
+      }
+      groupedMealPlans[mp.date][mp.meal_type].push(mp);
+    });
+    
+    // 各メニューを順序でソート
+    Object.keys(groupedMealPlans).forEach(date => {
+      ['lunch', 'dinner'].forEach(mealType => {
+        if (groupedMealPlans[date][mealType]) {
+          groupedMealPlans[date][mealType].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        }
+      });
     });
 
     // 翌日から1週間分の日付を生成（最上部は翌日）
@@ -551,7 +563,7 @@ class CoupleRecipeApp {
       const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
       const isTomorrow = index === 0; // 最初のアイテムが翌日
       
-      const dayMeals = groupedMealPlans[dateStr] || {};
+      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };
       
       mealPlansHtml += `
         <div class="meal-plan-day ${isTomorrow ? 'tomorrow' : ''}">
@@ -563,13 +575,13 @@ class CoupleRecipeApp {
             <div class="meal-item">
               <span class="meal-label">昼</span>
               <div class="meal-content">
-                ${this.renderMealPlanItem(dayMeals.lunch, dateStr, 'lunch')}
+                ${this.renderMealTypeItems(dayMeals.lunch, dateStr, 'lunch')}
               </div>
             </div>
             <div class="meal-item">
               <span class="meal-label">夜</span>
               <div class="meal-content">
-                ${this.renderMealPlanItem(dayMeals.dinner, dateStr, 'dinner')}
+                ${this.renderMealTypeItems(dayMeals.dinner, dateStr, 'dinner')}
               </div>
             </div>
           </div>
@@ -580,9 +592,12 @@ class CoupleRecipeApp {
     container.innerHTML = mealPlansHtml;
   }
 
-  renderMealPlanItem(mealPlan, date, mealType) {
-    if (mealPlan) {
-      return `
+  renderMealTypeItems(mealPlans, date, mealType) {
+    let html = '';
+    
+    // 既存のメニューを表示
+    mealPlans.forEach(mealPlan => {
+      html += `
         <div class="meal-plan-item" data-meal-id="${mealPlan.id}">
           <div class="meal-info">
             ${mealPlan.recipes ? 
@@ -597,22 +612,25 @@ class CoupleRecipeApp {
           </div>
         </div>
       `;
-    } else {
-      return `
-        <div class="meal-plan-empty">
-          <div class="meal-slot">
-            <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value)">
-              <option value="">レシピを選択</option>
-              ${this.recipes.map(recipe => 
-                `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`
-              ).join('')}
-            </select>
-            <textarea class="meal-notes-input" placeholder="メモを入力" 
-                      onblur="window.app.saveMealFromSlot('${date}', '${mealType}', this)"></textarea>
-          </div>
+    });
+    
+    // 新しいメニューを追加するスロット
+    html += `
+      <div class="meal-plan-empty">
+        <div class="meal-slot">
+          <select class="recipe-select" onchange="window.app.selectRecipe('${date}', '${mealType}', this.value)">
+            <option value="">+ レシピを追加</option>
+            ${this.recipes.map(recipe => 
+              `<option value="${recipe.id}">${this.escapeHtml(recipe.title)}</option>`
+            ).join('')}
+          </select>
+          <textarea class="meal-notes-input" placeholder="メモを入力" 
+                    onblur="window.app.saveMealFromSlot('${date}', '${mealType}', this)"></textarea>
         </div>
-      `;
-    }
+      </div>
+    `;
+    
+    return html;
   }
 
   selectRecipe(date, mealType, recipeId) {
@@ -631,42 +649,35 @@ class CoupleRecipeApp {
   }
 
   async saveMealPlan(date, mealType, recipeId, notes) {
+    // 次の順序番号を取得
+    const { data: existingMeals } = await supabaseClient
+      .from('meal_plans')
+      .select('sort_order')
+      .eq('date', date)
+      .eq('meal_type', mealType)
+      .order('sort_order', { ascending: false })
+      .limit(1);
+    
+    const nextSortOrder = existingMeals && existingMeals.length > 0 
+      ? (existingMeals[0].sort_order || 0) + 1 
+      : 0;
+
     const mealPlanData = {
       date: date,
       meal_type: mealType,
       recipe_id: recipeId || null,
       notes: notes || null,
-      user_id: this.currentUser.id
+      user_id: this.currentUser.id,
+      sort_order: nextSortOrder
     };
 
     try {
-      // 既存の献立があるかチェック
-      const { data: existingMeal } = await supabaseClient
+      const { error } = await supabaseClient
         .from('meal_plans')
-        .select('id')
-        .eq('date', date)
-        .eq('meal_type', mealType)
-        .single();
+        .insert(mealPlanData);
 
-      if (existingMeal) {
-        // 既存の献立を更新
-        const { error } = await supabaseClient
-          .from('meal_plans')
-          .update(mealPlanData)
-          .eq('id', existingMeal.id);
-
-        if (error) throw error;
-        this.showMessage('献立を更新しました', 'success');
-      } else {
-        // 新規作成
-        const { error } = await supabaseClient
-          .from('meal_plans')
-          .insert(mealPlanData);
-
-        if (error) throw error;
-        this.showMessage('献立を追加しました', 'success');
-      }
-
+      if (error) throw error;
+      this.showMessage('献立を追加しました', 'success');
       await this.loadAppData();
 
     } catch (error) {
