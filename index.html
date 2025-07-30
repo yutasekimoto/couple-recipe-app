@@ -18,4 +18,187 @@
             </div>
         </div>
 
-    
+        <!-- ペアリング画面 -->
+        <div id="pairing-screen" class="screen hidden">
+            <div class="pairing-content">
+                <header class="app-header">
+                    <h1>夫婦レシピ</h1>
+                    <p>ふたりで献立を共有しよう</p>
+                </header>
+
+                <div class="pairing-status" id="pairing-status">
+                    <div class="status-unpaired" id="status-unpaired">
+                        <h3>ペアリングが必要です</h3>
+                        <p>パートナーと一緒にアプリを使うために、ペアリングを行ってください。</p>
+                        
+                        <div class="pairing-options">
+                            <button class="btn btn-primary" id="generate-code-btn">
+                                コードを生成する
+                            </button>
+                            <button class="btn btn-secondary" id="enter-code-btn">
+                                コードを入力する
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="status-generate hidden" id="status-generate">
+                        <h3>ペアリングコード</h3>
+                        <div class="pair-code-display">
+                            <span class="pair-code" id="generated-code">------</span>
+                        </div>
+                        <p>このコードをパートナーに伝えてください</p>
+                        <button class="btn btn-secondary" id="back-to-options">戻る</button>
+                    </div>
+
+                    <div class="status-enter hidden" id="status-enter">
+                        <h3>ペアリングコードを入力</h3>
+                        <div class="code-input-group">
+                            <input type="text" id="pair-code-input" placeholder="6桁のコードを入力" maxlength="6">
+                            <button class="btn btn-primary" id="pair-btn">ペアリング</button>
+                        </div>
+                        <button class="btn btn-secondary" id="back-to-options-2">戻る</button>
+                    </div>
+
+                    <div class="status-paired hidden" id="status-paired">
+                        <h3>ペアリング完了！</h3>
+                        <p>パートナーとの連携が完了しました</p>
+                        <button class="btn btn-primary" id="start-app-btn">アプリを開始</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインアプリ画面 -->
+        <div id="main-screen" class="screen hidden">
+            <header class="main-header">
+                <div class="header-content">
+                    <h1 class="app-title">夫婦レシピ</h1>
+                    <div class="header-actions">
+                        <span class="pair-indicator" id="pair-indicator">
+                            <span class="pair-status">ペア済み</span>
+                        </span>
+                        <button class="btn-icon" id="settings-btn" title="設定">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <nav class="main-nav">
+                    <button class="nav-btn active" data-view="recipes">
+                        <span>レシピ</span>
+                    </button>
+                    <button class="nav-btn" data-view="calendar">
+                        <span>献立</span>
+                    </button>
+                </nav>
+            </header>
+
+            <main class="main-content">
+                <!-- レシピ一覧画面 -->
+                <div id="recipes-view" class="view active">
+                    <div class="view-header">
+                        <h2>レシピ一覧</h2>
+                        <div class="view-actions">
+                            <button class="btn btn-primary" id="add-recipe-btn">
+                                レシピ追加
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="recipe-search" placeholder="レシピを検索...">
+                        </div>
+                        <div class="tag-filters" id="tag-filters">
+                            <button class="filter-btn active" data-tag="all">すべて</button>
+                        </div>
+                    </div>
+
+                    <div class="recipes-grid" id="recipes-grid">
+                        <div class="empty-state">
+                            <p>まだレシピがありません</p>
+                            <p>最初のレシピを追加してみましょう！</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 献立カレンダー画面 -->
+                <div id="calendar-view" class="view hidden">
+                    <div class="view-header">
+                        <h2>献立カレンダー</h2>
+                        <div class="calendar-nav">
+                            <button class="btn-icon" id="prev-month">‹</button>
+                            <span class="current-month" id="current-month">2024年1月</span>
+                            <button class="btn-icon" id="next-month">›</button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-container">
+                        <div class="calendar-grid" id="calendar-grid">
+                            <!-- カレンダーはJavaScriptで生成 -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- モーダル：レシピ追加・編集 -->
+        <div id="recipe-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="recipe-modal-title">レシピ追加</h3>
+                    <button class="btn-icon modal-close" id="close-recipe-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="recipe-form">
+                        <div class="form-group">
+                            <label for="recipe-title">レシピ名 *</label>
+                            <input type="text" id="recipe-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="recipe-url">レシピURL</label>
+                            <input type="url" id="recipe-url" placeholder="https://www.instagram.com/p/...">
+                        </div>
+                        <div class="form-group">
+                            <label for="recipe-description">説明</label>
+                            <textarea id="recipe-description" rows="3"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cooking-time">調理時間（分）</label>
+                                <input type="number" id="cooking-time" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="servings">人数</label>
+                                <input type="number" id="servings" min="1" value="2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>タグ</label>
+                            <div class="tag-checkboxes" id="tag-checkboxes">
+                                <!-- タグ選択はJavaScriptで生成 -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancel-recipe">キャンセル</button>
+                    <button class="btn btn-primary" id="save-recipe">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- エラー・成功メッセージ -->
+        <div id="message-container" class="message-container"></div>
+    </div>
+
+    <!-- Supabase JS -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- アプリの設定 -->
+    <script src="config.js"></script>
+    <!-- メインスクリプト -->
+    <script src="script.js"></script>
+</body>
+</html>

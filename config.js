@@ -197,8 +197,8 @@ const DatabaseHelper = {
         .from('recipes')
         .select(`
           *,
-          recipe_folder_relations (
-            recipe_folders (
+          recipe_tag_relations (
+            recipe_tags (
               id, name, color
             )
           )
@@ -217,24 +217,24 @@ const DatabaseHelper = {
     }
   },
   
-  // フォルダ関連
-  async getFolders() {
+  // タグ関連
+  async getTags() {
     if (!supabaseClient) return [];
     
     try {
       const { data, error } = await supabaseClient
-        .from('recipe_folders')
+        .from('recipe_tags')
         .select('*')
         .order('created_at', { ascending: true });
       
       if (error) {
-        console.error('フォルダ取得エラー:', error);
+        console.error('タグ取得エラー:', error);
         return [];
       }
       
       return data || [];
     } catch (error) {
-      console.error('フォルダ取得エラー:', error);
+      console.error('タグ取得エラー:', error);
       return [];
     }
   },
