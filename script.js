@@ -481,7 +481,10 @@ class CoupleRecipeApp {
         
         // 献立作成中にレシピを作成した場合、モーダル上で選択状態にする
         if (this.pendingMealPlan) {
-          // 選択リストに追加
+          // 選択リストに追加（重複チェック）
+          if (!this.selectedRecipeIds) {
+            this.selectedRecipeIds = [];
+          }
           if (!this.selectedRecipeIds.includes(savedRecipe.id)) {
             this.selectedRecipeIds.push(savedRecipe.id);
           }
@@ -1132,6 +1135,15 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       return recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
     });
     
+    // 選択済みと未選択でソート
+    const selectedRecipes = filteredRecipes.filter(recipe => 
+      this.selectedRecipeIds.includes(recipe.id)
+    );
+    const unselectedRecipes = filteredRecipes.filter(recipe => 
+      !this.selectedRecipeIds.includes(recipe.id)
+    );
+    const sortedRecipes = [...selectedRecipes, ...unselectedRecipes];
+    
     let html = '';
     
     // 新規レシピ作成オプション
@@ -1143,8 +1155,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       </div>
     `;
     
-    // 既存レシピオプション
-    filteredRecipes.forEach(recipe => {
+    // 既存レシピオプション（選択済みを上に表示）
+    sortedRecipes.forEach(recipe => {
       const isSelected = this.selectedRecipeIds.includes(recipe.id);
       const tags = (recipe.recipe_tag_relations || []).map(rel => rel.recipe_tags);
       
