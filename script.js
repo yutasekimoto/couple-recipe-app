@@ -134,6 +134,12 @@ class CoupleRecipeApp {
     document.getElementById('save-recipe')?.addEventListener('click', () => this.saveRecipe());
     document.getElementById('add-tag-btn')?.addEventListener('click', () => this.addNewTag());
 
+    // 調理時間スライダー
+    document.getElementById('recipe-cooking-time')?.addEventListener('input', (e) => {
+      const minutes = parseInt(e.target.value);
+      document.getElementById('cooking-time-display').textContent = this.formatCookingTime(minutes);
+    });
+
     // 検索
     document.getElementById('recipe-search')?.addEventListener('input', (e) => {
       this.filterRecipes(e.target.value);
@@ -361,7 +367,8 @@ class CoupleRecipeApp {
       document.getElementById('recipe-title').value = recipe.title || '';
       document.getElementById('recipe-url').value = recipe.recipe_url || '';
       document.getElementById('recipe-description').value = recipe.description || '';
-      document.getElementById('recipe-effort-level').value = recipe.effort_level || 2;
+      document.getElementById('recipe-cooking-time').value = recipe.cooking_time_minutes || 15;
+      document.getElementById('cooking-time-display').textContent = this.formatCookingTime(recipe.cooking_time_minutes || 15);
     } else {
       // 新規追加モード
       document.getElementById('recipe-modal-title').textContent = 'レシピ追加';
@@ -384,7 +391,7 @@ class CoupleRecipeApp {
       title: formData.get('recipe-title') || document.getElementById('recipe-title').value,
       recipe_url: document.getElementById('recipe-url').value || null,
       description: document.getElementById('recipe-description').value || null,
-      effort_level: parseInt(document.getElementById('recipe-effort-level').value) || 2,
+      cooking_time_minutes: parseInt(document.getElementById('recipe-cooking-time').value) || 15,
       user_id: this.currentUser.id
     };
 
@@ -513,7 +520,7 @@ class CoupleRecipeApp {
         
         <div class="recipe-meta">
           <div class="meta-item">
-            <span class="effort-level">${this.getEffortLevelDisplay(recipe.effort_level)}</span>
+            <span class="cooking-time">⏱️ ${this.formatCookingTime(recipe.cooking_time_minutes)}</span>
           </div>
         </div>
         
@@ -1036,17 +1043,19 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     return div.innerHTML;
   }
   
-  // 手間レベルの表示用ヘルパー
-  getEffortLevelDisplay(level) {
-    switch (parseInt(level)) {
-      case 1:
-        return '🟢 簡単';
-      case 2:
-        return '🟡 普通';
-      case 3:
-        return '🔴 手間';
-      default:
-        return '🟡 普通';
+  // 所要時間の表示用ヘルパー
+  formatCookingTime(minutes) {
+    const time = parseInt(minutes) || 15;
+    if (time >= 60) {
+      const hours = Math.floor(time / 60);
+      const mins = time % 60;
+      if (mins === 0) {
+        return `${hours}時間`;
+      } else {
+        return `${hours}時間${mins}分`;
+      }
+    } else {
+      return `${time}分`;
     }
   }
 
