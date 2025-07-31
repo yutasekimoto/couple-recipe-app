@@ -77,9 +77,9 @@
                         <span class="pair-indicator" id="pair-indicator">
                             <span class="pair-status">ペア済み</span>
                         </span>
-                        <button class="btn-icon" id="settings-btn" title="設定">
+                        <button class="btn-icon" id="profile-btn" title="プロフィール設定">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
                         </button>
                     </div>
@@ -234,6 +234,40 @@
             </div>
         </div>
 
+        <!-- モーダル：ユーザープロフィール設定 -->
+        <div id="profile-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="profile-modal-title">プロフィール設定</h3>
+                    <button class="btn-icon modal-close" id="close-profile-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label for="user-nickname">ニックネーム *</label>
+                            <input type="text" id="user-nickname" required maxlength="50" placeholder="例：太郎、花子">
+                        </div>
+                        <div class="form-group">
+                            <label>役割 *</label>
+                            <div class="role-selection">
+                                <label class="role-option">
+                                    <input type="radio" name="user-role" value="husband" required>
+                                    <span class="role-label">🤵 夫</span>
+                                </label>
+                                <label class="role-option">
+                                    <input type="radio" name="user-role" value="wife" required>
+                                    <span class="role-label">👰 妻</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancel-profile">キャンセル</button>
+                    <button class="btn btn-primary" id="save-profile">保存</button>
+                </div>
+            </div>
+        </div>
 
         <!-- エラー・成功メッセージ -->
         <div id="message-container" class="message-container"></div>

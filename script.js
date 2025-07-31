@@ -97,6 +97,16 @@ class CoupleRecipeApp {
         await this.loadAppData();
         this.showScreen('main');
         console.log('メイン画面表示完了');
+        
+        // プロフィール未設定の場合はモーダルを表示
+        if (!this.currentUser.nickname || !this.currentUser.role) {
+          setTimeout(() => {
+            this.showProfileModal();
+            this.showMessage('プロフィールを設定してください', 'info');
+          }, 500);
+        } else {
+          this.updateUserDisplay();
+        }
       } else {
         console.log('未ペア - ペアリング画面表示');
         // 未ペア - ペアリング画面を表示
@@ -144,6 +154,12 @@ class CoupleRecipeApp {
     document.getElementById('close-meal-modal')?.addEventListener('click', () => this.hideMealModal());
     document.getElementById('cancel-meal')?.addEventListener('click', () => this.hideMealModal());
     document.getElementById('save-meal')?.addEventListener('click', () => this.saveMealFromModal());
+    
+    // プロフィール設定関連
+    document.getElementById('profile-btn')?.addEventListener('click', () => this.showProfileModal());
+    document.getElementById('close-profile-modal')?.addEventListener('click', () => this.hideProfileModal());
+    document.getElementById('cancel-profile')?.addEventListener('click', () => this.hideProfileModal());
+    document.getElementById('save-profile')?.addEventListener('click', () => this.saveProfile());
     
     // 献立モーダル内のレシピ検索
     document.getElementById('meal-recipe-search')?.addEventListener('input', (e) => {
@@ -1332,6 +1348,83 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     html += '</div>';
     
     container.innerHTML = html;
+  }
+
+  // ===== プロフィール設定関連 =====
+  showProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    
+    // 現在のユーザー情報を設定
+    if (this.currentUser) {
+      document.getElementById('user-nickname').value = this.currentUser.nickname || '';
+      
+      if (this.currentUser.role) {
+        const roleRadio = document.querySelector(`input[name="user-role"][value="${this.currentUser.role}"]`);
+        if (roleRadio) {
+          roleRadio.checked = true;
+        }
+      }
+    }
+    
+    modal.classList.remove('hidden');
+  }
+  
+  hideProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    modal.classList.add('hidden');
+  }
+  
+  async saveProfile() {
+    const nickname = document.getElementById('user-nickname').value.trim();
+    const role = document.querySelector('input[name="user-role"]:checked')?.value;
+    
+    if (!nickname) {
+      this.showMessage('ニックネームを入力してください', 'error');
+      return;
+    }
+    
+    if (!role) {
+      this.showMessage('役割を選択してください', 'error');
+      return;
+    }
+    
+    try {
+      const { error } = await supabaseClient
+        .from('users')
+        .update({
+          nickname: nickname,
+          role: role
+        })
+        .eq('auth_id', this.authManager.currentUserId);
+      
+      if (error) throw error;
+      
+      // ローカルの情報を更新
+      this.currentUser.nickname = nickname;
+      this.currentUser.role = role;
+      
+      // 画面表示を更新
+      this.updateUserDisplay();
+      
+      this.hideProfileModal();
+      this.showMessage('プロフィールを保存しました', 'success');
+      
+    } catch (error) {
+      console.error('プロフィール保存エラー:', error);
+      this.showMessage('プロフィールの保存に失敗しました', 'error');
+    }
+  }
+  
+  updateUserDisplay() {
+    // ヘッダーにユーザー情報を表示（将来的に拡張）
+    if (this.currentUser && this.currentUser.nickname) {
+      // プロフィールボタンのツールチップを更新
+      const profileBtn = document.getElementById('profile-btn');
+      if (profileBtn) {
+        const roleText = this.currentUser.role === 'husband' ? '夫' : '妻';
+        profileBtn.title = `${this.currentUser.nickname}（${roleText}）`;
+      }
+    }
   }
 
   showMessage(message, type = 'info') {
