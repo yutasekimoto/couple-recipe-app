@@ -797,6 +797,10 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
                 `<div class="meal-cooking-time">⏱️ ${this.formatCookingTime(mealPlan.recipes.cooking_time_minutes)}</div>` : 
                 ''
               }
+              ${mealPlan.assignment ? 
+                `<div class="meal-assignment">${this.formatAssignment(mealPlan.assignment)}</div>` : 
+                ''
+              }
               ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
             </div>
             <div class="meal-actions">
@@ -1099,6 +1103,20 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       return `${time}分`;
     }
   }
+  
+  // 担当者の表示用ヘルパー
+  formatAssignment(assignment) {
+    switch (assignment) {
+      case 'husband':
+        return '🤵 夫';
+      case 'wife':
+        return '👰 妻';
+      case 'both':
+        return '👫 一緒に';
+      default:
+        return '';
+    }
+  }
 
   // ===== 献立モーダル関連 =====
   showMealModal(date, mealType, existingMealPlan = null) {
@@ -1123,11 +1141,24 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     if (existingMealPlan) {
       document.getElementById('meal-modal-notes').value = existingMealPlan.notes || '';
       this.selectedRecipeIds = [existingMealPlan.recipe_id];
+      
+      // 担当者を設定
+      if (existingMealPlan.assignment) {
+        const assignmentRadio = document.querySelector(`input[name="meal-assignment"][value="${existingMealPlan.assignment}"]`);
+        if (assignmentRadio) {
+          assignmentRadio.checked = true;
+        }
+      } else {
+        document.querySelector('input[name="meal-assignment"][value=""]').checked = true;
+      }
     } else {
       document.getElementById('meal-modal-notes').value = '';
       // 既存の献立一覧を取得して複数選択状態にする
       const existingMeals = this.mealPlans.filter(mp => mp.date === date && mp.meal_type === mealType);
       this.selectedRecipeIds = existingMeals.map(mp => mp.recipe_id);
+      
+      // 担当者をリセット
+      document.querySelector('input[name="meal-assignment"][value=""]').checked = true;
     }
     
     // レシピオプションを表示
@@ -1269,6 +1300,7 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     }
     
     const notes = document.getElementById('meal-modal-notes').value.trim();
+    const assignment = document.querySelector('input[name="meal-assignment"]:checked')?.value || null;
     const { date, mealType, existingMealPlan } = this.currentMealEdit;
     
     try {
@@ -1278,7 +1310,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
           .from('meal_plans')
           .update({
             recipe_id: this.selectedRecipeIds[0],
-            notes: notes || null
+            notes: notes || null,
+            assignment: assignment
           })
           .eq('id', existingMealPlan.id);
           
@@ -1301,6 +1334,7 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
           meal_type: mealType,
           recipe_id: recipeId,
           notes: notes || null,
+          assignment: assignment,
           user_id: this.currentUser.id
         }));
         

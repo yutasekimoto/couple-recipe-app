@@ -712,6 +712,16 @@ body {
     gap: 4px;
 }
 
+.meal-assignment {
+    font-size: 12px;
+    color: #4F8BE8;
+    margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
 .meal-notes {
     font-size: 14px;
     color: #666666;
@@ -1348,6 +1358,62 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+/* ===== 担当者選択 ===== */
+.assignment-section {
+    margin-bottom: 20px;
+}
+
+.assignment-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.assignment-selection {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.assignment-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 2px solid #E0E0E0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.assignment-option:hover {
+    border-color: #4F8BE8;
+    background: rgba(79, 139, 232, 0.05);
+}
+
+.assignment-option input[type="radio"] {
+    width: auto;
+    margin: 0;
+}
+
+.assignment-option input[type="radio"]:checked + .assignment-label {
+    font-weight: 600;
+    color: #4F8BE8;
+}
+
+.assignment-option:has(input[type="radio"]:checked) {
+    border-color: #4F8BE8;
+    background: rgba(79, 139, 232, 0.1);
+}
+
+.assignment-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ===== レスポンシブデザイン ===== */
