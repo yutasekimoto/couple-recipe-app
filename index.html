@@ -18,6 +18,101 @@
             </div>
         </div>
 
+        <!-- ログイン・登録画面 -->
+        <div id="auth-screen" class="screen hidden">
+            <div class="auth-content">
+                <header class="app-header">
+                    <h1>夫婦レシピ</h1>
+                    <p>ふたりで献立を共有しよう</p>
+                </header>
+
+                <div class="auth-container">
+                    <!-- ログインフォーム -->
+                    <div class="auth-form" id="login-form">
+                        <h3>ログイン</h3>
+                        <form id="login-form-element">
+                            <div class="form-group">
+                                <label for="login-email">メールアドレス</label>
+                                <input type="email" id="login-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="login-password">パスワード</label>
+                                <input type="password" id="login-password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary auth-submit">ログイン</button>
+                        </form>
+                        <p class="auth-switch">
+                            アカウントをお持ちでない方は 
+                            <a href="#" id="show-register">新規登録</a>
+                        </p>
+                        <p class="auth-switch">
+                            既存データを引き継ぎたい方は 
+                            <a href="#" id="show-convert">アカウント変換</a>
+                        </p>
+                    </div>
+
+                    <!-- 登録フォーム -->
+                    <div class="auth-form hidden" id="register-form">
+                        <h3>新規登録</h3>
+                        <form id="register-form-element">
+                            <div class="form-group">
+                                <label for="register-email">メールアドレス</label>
+                                <input type="email" id="register-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-password">パスワード</label>
+                                <input type="password" id="register-password" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="register-nickname">ニックネーム</label>
+                                <input type="text" id="register-nickname" required maxlength="50" placeholder="例：太郎、花子">
+                            </div>
+                            <div class="form-group">
+                                <label>役割</label>
+                                <div class="role-selection">
+                                    <label class="role-option">
+                                        <input type="radio" name="register-role" value="husband" required>
+                                        <span class="role-label">🤵 夫</span>
+                                    </label>
+                                    <label class="role-option">
+                                        <input type="radio" name="register-role" value="wife" required>
+                                        <span class="role-label">👰 妻</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary auth-submit">登録</button>
+                        </form>
+                        <p class="auth-switch">
+                            すでにアカウントをお持ちの方は 
+                            <a href="#" id="show-login">ログイン</a>
+                        </p>
+                    </div>
+
+                    <!-- アカウント変換フォーム（既存ユーザー向け） -->
+                    <div class="auth-form hidden" id="convert-form">
+                        <h3>アカウントをメール認証に変換</h3>
+                        <p class="convert-description">
+                            現在のデータを保持したまま、PC・スマホどちらからでもアクセスできるようになります。
+                        </p>
+                        <form id="convert-form-element">
+                            <div class="form-group">
+                                <label for="convert-email">メールアドレス</label>
+                                <input type="email" id="convert-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="convert-password">パスワード</label>
+                                <input type="password" id="convert-password" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-primary auth-submit">変換する</button>
+                        </form>
+                        <p class="auth-switch">
+                            <a href="#" id="show-login-from-convert">ログインに戻る</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ペアリング画面 -->
         <div id="pairing-screen" class="screen hidden">
             <div class="pairing-content">

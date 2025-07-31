@@ -139,6 +139,71 @@ body {
     font-size: 1.1rem;
 }
 
+/* ===== 認証画面 ===== */
+#auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #E85A4F 0%, #4F8BE8 100%);
+    padding: 20px;
+}
+
+.auth-content {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.auth-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.auth-form {
+    text-align: left;
+}
+
+.auth-form h3 {
+    color: #333333;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.auth-submit {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 20px;
+    color: #666666;
+    font-size: 14px;
+}
+
+.auth-switch a {
+    color: #4F8BE8;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+.convert-description {
+    background: rgba(79, 139, 232, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #333333;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 /* ===== ペアリング画面 ===== */
 #pairing-screen {
     display: flex;

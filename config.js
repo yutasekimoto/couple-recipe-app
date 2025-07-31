@@ -74,12 +74,11 @@ class AuthManager {
     this.pairedUserId = null;
   }
   
-  // 匿名認証
-  async signInAnonymously() {
+  // 既存セッション確認
+  async checkExistingSession() {
     if (!supabaseClient) return null;
     
     try {
-      // 既存のセッション確認
       const { data: { session } } = await supabaseClient.auth.getSession();
       
       if (session?.user) {
@@ -93,6 +92,97 @@ class AuthManager {
         return session.user;
       }
       
+      return null;
+    } catch (error) {
+      console.error('セッション確認エラー:', error);
+      return null;
+    }
+  }
+  
+  // メール認証でログイン
+  async signInWithEmail(email, password) {
+    if (!supabaseClient) return null;
+    
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      
+      if (error) {
+        console.error('ログインエラー:', error);
+        return { error: error.message };
+      }
+      
+      this.currentUser = data.user;
+      this.currentUserId = data.user.id;
+      
+      if (APP_CONFIG.debug) {
+        console.log('ログイン成功:', this.currentUserId);
+      }
+      
+      return { user: data.user };
+      
+    } catch (error) {
+      console.error('ログインエラー:', error);
+      return { error: error.message };
+    }
+  }
+  
+  // メール認証で新規登録
+  async signUpWithEmail(email, password, nickname, role) {
+    if (!supabaseClient) return null;
+    
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
+      
+      if (error) {
+        console.error('登録エラー:', error);
+        return { error: error.message };
+      }
+      
+      if (data.user) {
+        // ユーザープロファイルを作成
+        const { error: profileError } = await supabaseClient
+          .from('users')
+          .insert({
+            auth_id: data.user.id,
+            nickname: nickname,
+            role: role,
+            display_name: nickname
+          });
+          
+        if (profileError) {
+          console.error('プロファイル作成エラー:', profileError);
+          return { error: 'プロファイルの作成に失敗しました' };
+        }
+        
+        this.currentUser = data.user;
+        this.currentUserId = data.user.id;
+        
+        if (APP_CONFIG.debug) {
+          console.log('登録成功:', this.currentUserId);
+        }
+        
+        return { user: data.user };
+      }
+      
+      return { error: 'ユーザー作成に失敗しました' };
+      
+    } catch (error) {
+      console.error('登録エラー:', error);
+      return { error: error.message };
+    }
+  }
+  
+  // 匿名認証（既存ユーザー向け・後方互換性）
+  async signInAnonymously() {
+    if (!supabaseClient) return null;
+    
+    try {
       // 新規匿名ユーザー作成
       const { data, error } = await supabaseClient.auth.signInAnonymously();
       
@@ -113,6 +203,58 @@ class AuthManager {
     } catch (error) {
       console.error('認証エラー:', error);
       return null;
+    }
+  }
+  
+  // アカウント変換（匿名→メール認証）
+  async convertAnonymousAccount(email, password) {
+    if (!supabaseClient || !this.currentUser) return { error: 'ユーザーが見つかりません' };
+    
+    try {
+      // 匿名ユーザーをメール認証に変換
+      const { data, error } = await supabaseClient.auth.updateUser({
+        email: email,
+        password: password
+      });
+      
+      if (error) {
+        console.error('アカウント変換エラー:', error);
+        return { error: error.message };
+      }
+      
+      if (APP_CONFIG.debug) {
+        console.log('アカウント変換成功:', this.currentUserId);
+      }
+      
+      return { user: data.user };
+      
+    } catch (error) {
+      console.error('アカウント変換エラー:', error);
+      return { error: error.message };
+    }
+  }
+  
+  // ログアウト
+  async signOut() {
+    if (!supabaseClient) return;
+    
+    try {
+      const { error } = await supabaseClient.auth.signOut();
+      
+      if (error) {
+        console.error('ログアウトエラー:', error);
+        return { error: error.message };
+      }
+      
+      this.currentUser = null;
+      this.currentUserId = null;
+      this.pairedUserId = null;
+      
+      return { success: true };
+      
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      return { error: error.message };
     }
   }
   
@@ -167,7 +309,7 @@ class AuthManager {
     try {
       const { data, error } = await supabaseClient
         .from('users')
-        .select('paired_with, pair_code')
+        .select('paired_with, pair_code, nickname, role')
         .eq('auth_id', this.currentUserId)
         .single();
       
