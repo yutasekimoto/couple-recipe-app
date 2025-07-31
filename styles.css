@@ -260,6 +260,13 @@ body {
     color: #E85A4F;
 }
 
+.version-display {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #999999;
+    margin-left: 8px;
+}
+
 .header-actions {
     display: flex;
     align-items: center;
