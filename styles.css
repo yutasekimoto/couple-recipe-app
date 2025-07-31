@@ -1028,6 +1028,157 @@ body {
     to { transform: translateX(100%); }
 }
 
+/* ===== 献立選択モーダル ===== */
+.meal-modal-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #F8F9FA;
+    border-radius: 8px;
+}
+
+.meal-date-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.meal-type-badge {
+    background: #4F8BE8;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.recipe-search-section {
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #E0E0E0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #4F8BE8;
+    box-shadow: 0 0 0 3px rgba(79, 139, 232, 0.1);
+}
+
+.recipe-list-section {
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.recipe-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.recipe-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 2px solid #F0F0F0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recipe-option:hover {
+    border-color: #4F8BE8;
+    background: rgba(79, 139, 232, 0.05);
+}
+
+.recipe-option.selected {
+    border-color: #E85A4F;
+    background: rgba(232, 90, 79, 0.1);
+}
+
+.recipe-option-info {
+    flex: 1;
+}
+
+.recipe-option-title {
+    font-weight: 500;
+    color: #333333;
+    margin-bottom: 4px;
+}
+
+.recipe-option-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #666666;
+}
+
+.recipe-option-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recipe-option-tags {
+    display: flex;
+    gap: 4px;
+}
+
+.recipe-option-tag {
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: white;
+    font-size: 10px;
+}
+
+.new-recipe-option {
+    border: 2px dashed #4F8BE8;
+    color: #4F8BE8;
+    text-align: center;
+    font-weight: 500;
+}
+
+.new-recipe-option:hover {
+    background: rgba(79, 139, 232, 0.1);
+}
+
+.meal-notes-section {
+    margin-bottom: 20px;
+}
+
+.meal-notes-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.meal-notes-section textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #E0E0E0;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.meal-notes-section textarea:focus {
+    outline: none;
+    border-color: #4F8BE8;
+    box-shadow: 0 0 0 3px rgba(79, 139, 232, 0.1);
+}
+
 /* ===== レスポンシブデザイン ===== */
 @media (max-width: 768px) {
     .app-header h1 {

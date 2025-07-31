@@ -190,6 +190,43 @@
             </div>
         </div>
 
+        <!-- モーダル：献立選択・編集 -->
+        <div id="meal-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="meal-modal-title">レシピを選択</h3>
+                    <button class="btn-icon modal-close" id="close-meal-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="meal-modal-info">
+                        <div class="meal-date-info">
+                            <span id="meal-modal-date">2025/7/31 (水)</span>
+                            <span id="meal-modal-type" class="meal-type-badge">昼</span>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-search-section">
+                        <input type="text" id="meal-recipe-search" placeholder="レシピを検索..." class="search-input">
+                    </div>
+                    
+                    <div class="recipe-list-section">
+                        <div class="recipe-options" id="meal-recipe-options">
+                            <!-- レシピ一覧はJavaScriptで生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="meal-notes-section">
+                        <label for="meal-modal-notes">メモ（任意）</label>
+                        <textarea id="meal-modal-notes" placeholder="特記事項があれば記入してください" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancel-meal">キャンセル</button>
+                    <button class="btn btn-primary" id="save-meal">保存</button>
+                </div>
+            </div>
+        </div>
+
 
         <!-- エラー・成功メッセージ -->
         <div id="message-container" class="message-container"></div>
