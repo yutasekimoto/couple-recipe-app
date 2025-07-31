@@ -1071,9 +1071,7 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
   // 所要時間の表示用ヘルパー
   formatCookingTime(minutes) {
     const time = parseInt(minutes) || 15;
-    if (time >= 75) {
-      return '1時間以上';
-    } else if (time >= 60) {
+    if (time >= 60) {
       const hours = Math.floor(time / 60);
       const mins = time % 60;
       if (mins === 0) {
