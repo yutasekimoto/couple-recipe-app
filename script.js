@@ -479,13 +479,17 @@ class CoupleRecipeApp {
           this.renderMealPlans();
         }
         
-        // 献立作成中にレシピを作成した場合、その献立に追加
+        // 献立作成中にレシピを作成した場合、モーダル上で選択状態にする
         if (this.pendingMealPlan) {
-          await this.saveMealPlan(
+          // 選択リストに追加
+          if (!this.selectedRecipeIds.includes(savedRecipe.id)) {
+            this.selectedRecipeIds.push(savedRecipe.id);
+          }
+          // モーダルを再表示
+          this.showMealModal(
             this.pendingMealPlan.date,
             this.pendingMealPlan.mealType,
-            savedRecipe.id,
-            null
+            this.pendingMealPlan.existingMealPlan
           );
           this.pendingMealPlan = null;
         }
@@ -1242,7 +1246,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
           date,
           meal_type: mealType,
           recipe_id: recipeId,
-          notes: notes || null
+          notes: notes || null,
+          user_id: this.currentUser.id
         }));
         
         const { error: insertError } = await supabaseClient
