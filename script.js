@@ -777,8 +777,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
                 `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
                 '<span class="meal-title">レシピなし</span>'
               }
-              ${mealPlan.recipes && mealPlan.recipes.cooking_time ? 
-                `<div class="meal-cooking-time">⏱️ ${this.formatCookingTime(mealPlan.recipes.cooking_time)}</div>` : 
+              ${mealPlan.recipes && mealPlan.recipes.cooking_time_minutes ? 
+                `<div class="meal-cooking-time">⏱️ ${this.formatCookingTime(mealPlan.recipes.cooking_time_minutes)}</div>` : 
                 ''
               }
               ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
@@ -1197,11 +1197,11 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       html += `
         <div class="no-results-section">
           <div class="no-results-message">
-            <p>「${this.escapeHtml(searchTerm)}」に一致するレシピが見つかりません</p>
+            <p>該当するレシピが見つかりません</p>
           </div>
           <div class="recipe-option new-recipe-option" onclick="window.app.createNewRecipeFromSearch('${this.escapeHtml(searchTerm)}')">
             <div class="recipe-option-info">
-              <div class="recipe-option-title">+ 「${this.escapeHtml(searchTerm)}」のレシピを作成</div>
+              <div class="recipe-option-title">+ 新しいレシピを作成</div>
             </div>
           </div>
         </div>

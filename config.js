@@ -249,7 +249,7 @@ const DatabaseHelper = {
         .select(`
           *,
           recipes (
-            id, title, recipe_url, cooking_time
+            id, title, recipe_url, cooking_time_minutes
           )
         `)
         .gte('date', startDate)
