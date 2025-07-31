@@ -630,6 +630,11 @@ body {
     margin-bottom: 8px;
 }
 
+.meal-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .meal-label {
     font-weight: 600;
     color: #666666;
@@ -1101,15 +1106,15 @@ body {
 }
 
 .recipe-option.selected {
-    border-color: #E85A4F;
-    background: rgba(232, 90, 79, 0.1);
+    border-color: #4F8BE8;
+    background: rgba(79, 139, 232, 0.1);
 }
 
 .recipe-option-check {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #E85A4F;
+    background: #4F8BE8;
     color: white;
     display: flex;
     align-items: center;
@@ -1223,8 +1228,8 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: rgba(232, 90, 79, 0.1);
-    border: 1px solid #E85A4F;
+    background: rgba(79, 139, 232, 0.1);
+    border: 1px solid #4F8BE8;
     border-radius: 6px;
     font-size: 14px;
 }

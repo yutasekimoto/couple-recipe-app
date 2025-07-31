@@ -714,7 +714,10 @@ class CoupleRecipeApp {
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">昼</span>
-                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を非表示にする（外食等）">🗑️</button>
+                <div class="meal-header-actions">
+                  <button class="btn-icon" onclick="window.app.showMealModal('${dateStr}', 'lunch')" title="昼の献立を編集">✏️</button>
+                  <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を非表示にする（外食等）">🗑️</button>
+                </div>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
@@ -724,7 +727,10 @@ ${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
             <div class="meal-item">
               <div class="meal-header">
                 <span class="meal-label">夜</span>
-                <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を非表示にする（外食等）">🗑️</button>
+                <div class="meal-header-actions">
+                  <button class="btn-icon" onclick="window.app.showMealModal('${dateStr}', 'dinner')" title="夜の献立を編集">✏️</button>
+                  <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を非表示にする（外食等）">🗑️</button>
+                </div>
               </div>
               <div class="meal-content">
 ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
@@ -765,7 +771,6 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
               ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
             </div>
             <div class="meal-actions">
-              <button class="btn-icon" onclick="window.app.editMealPlanModal('${mealPlan.id}', '${date}', '${mealType}')" title="編集">✏️</button>
               <button class="btn-icon" onclick="window.app.deleteMealPlan('${mealPlan.id}')" title="削除">🗑️</button>
             </div>
           </div>
