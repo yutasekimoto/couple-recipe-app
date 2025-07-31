@@ -1092,6 +1092,7 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
 }
 
 .recipe-option:hover {
@@ -1102,6 +1103,26 @@ body {
 .recipe-option.selected {
     border-color: #E85A4F;
     background: rgba(232, 90, 79, 0.1);
+}
+
+.recipe-option-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #E85A4F;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.recipe-option:not(.selected) .recipe-option-check {
+    background: #E0E0E0;
+    color: transparent;
 }
 
 .recipe-option-info {
@@ -1177,6 +1198,68 @@ body {
     outline: none;
     border-color: #4F8BE8;
     box-shadow: 0 0 0 3px rgba(79, 139, 232, 0.1);
+}
+
+/* 選択されたレシピセクション */
+.selected-recipes-section {
+    margin-bottom: 20px;
+}
+
+.selected-recipes-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.selected-recipes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.selected-recipe-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(232, 90, 79, 0.1);
+    border: 1px solid #E85A4F;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.selected-recipe-title {
+    font-weight: 500;
+    color: #333333;
+}
+
+.remove-selected {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    background: #DC3545;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.remove-selected:hover {
+    background: #C82333;
+}
+
+.no-selection {
+    text-align: center;
+    color: #999999;
+    font-style: italic;
+    padding: 20px;
+    border: 2px dashed #E0E0E0;
+    border-radius: 8px;
+    margin: 0;
 }
 
 /* ===== レスポンシブデザイン ===== */

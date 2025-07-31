@@ -1080,17 +1080,23 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     document.getElementById('meal-modal-type').textContent = mealType === 'lunch' ? '昼' : '夜';
     document.getElementById('meal-modal-title').textContent = existingMealPlan ? 'レシピを変更' : 'レシピを選択';
     
+    // 複数選択用の配列を初期化
+    this.selectedRecipeIds = [];
+    
     // 既存の献立情報を設定
     if (existingMealPlan) {
       document.getElementById('meal-modal-notes').value = existingMealPlan.notes || '';
-      this.selectedRecipeId = existingMealPlan.recipe_id;
+      this.selectedRecipeIds = [existingMealPlan.recipe_id];
     } else {
       document.getElementById('meal-modal-notes').value = '';
-      this.selectedRecipeId = null;
+      // 既存の献立一覧を取得して複数選択状態にする
+      const existingMeals = this.mealPlans.filter(mp => mp.date === date && mp.meal_type === mealType);
+      this.selectedRecipeIds = existingMeals.map(mp => mp.recipe_id);
     }
     
     // レシピオプションを表示
     this.renderRecipeOptions();
+    this.renderSelectedRecipes();
     
     modal.classList.remove('hidden');
   }
@@ -1104,7 +1110,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     this.renderRecipeOptions();
     
     this.currentMealEdit = null;
-    this.selectedRecipeId = null;
+    this.selectedRecipeIds = [];
+    this.renderSelectedRecipes();
   }
   
   renderRecipeOptions(searchTerm = '') {
@@ -1129,11 +1136,11 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     
     // 既存レシピオプション
     filteredRecipes.forEach(recipe => {
-      const isSelected = this.selectedRecipeId === recipe.id;
+      const isSelected = this.selectedRecipeIds.includes(recipe.id);
       const tags = (recipe.recipe_tag_relations || []).map(rel => rel.recipe_tags);
       
       html += `
-        <div class="recipe-option ${isSelected ? 'selected' : ''}" onclick="window.app.selectRecipeOption('${recipe.id}')">
+        <div class="recipe-option ${isSelected ? 'selected' : ''}" onclick="window.app.toggleRecipeSelection('${recipe.id}')">
           <div class="recipe-option-info">
             <div class="recipe-option-title">${this.escapeHtml(recipe.title)}</div>
             <div class="recipe-option-meta">
@@ -1147,6 +1154,9 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
                 ).join('')}
               </div>
             </div>
+          </div>
+          <div class="recipe-option-check">
+            ${isSelected ? '✓' : ''}
           </div>
         </div>
       `;
@@ -1165,9 +1175,18 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     container.innerHTML = html;
   }
   
-  selectRecipeOption(recipeId) {
-    this.selectedRecipeId = recipeId;
+  toggleRecipeSelection(recipeId) {
+    const index = this.selectedRecipeIds.indexOf(recipeId);
+    if (index > -1) {
+      // 既に選択されている場合は削除
+      this.selectedRecipeIds.splice(index, 1);
+    } else {
+      // 選択されていない場合は追加
+      this.selectedRecipeIds.push(recipeId);
+    }
+    
     this.renderRecipeOptions(document.getElementById('meal-recipe-search').value);
+    this.renderSelectedRecipes();
   }
   
   createNewRecipeFromMeal() {
@@ -1186,7 +1205,7 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
   }
   
   async saveMealFromModal() {
-    if (!this.selectedRecipeId) {
+    if (this.selectedRecipeIds.length === 0) {
       this.showMessage('レシピを選択してください', 'error');
       return;
     }
@@ -1196,11 +1215,11 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     
     try {
       if (existingMealPlan) {
-        // 既存の献立を更新
+        // 編集モードの場合は単一レシピのみ更新
         const { error } = await supabaseClient
           .from('meal_plans')
           .update({
-            recipe_id: this.selectedRecipeId,
+            recipe_id: this.selectedRecipeIds[0],
             notes: notes || null
           })
           .eq('id', existingMealPlan.id);
@@ -1208,8 +1227,31 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
         if (error) throw error;
         this.showMessage('献立を更新しました', 'success');
       } else {
-        // 新規献立を作成
-        await this.saveMealPlan(date, mealType, this.selectedRecipeId, notes);
+        // 新規作成の場合は既存の献立を削除してから複数作成
+        // まず既存の献立を削除
+        const { error: deleteError } = await supabaseClient
+          .from('meal_plans')
+          .delete()
+          .eq('date', date)
+          .eq('meal_type', mealType);
+          
+        if (deleteError) throw deleteError;
+        
+        // 複数のレシピで献立を作成
+        const mealPlansToInsert = this.selectedRecipeIds.map(recipeId => ({
+          date,
+          meal_type: mealType,
+          recipe_id: recipeId,
+          notes: notes || null
+        }));
+        
+        const { error: insertError } = await supabaseClient
+          .from('meal_plans')
+          .insert(mealPlansToInsert);
+          
+        if (insertError) throw insertError;
+        
+        this.showMessage(`${this.selectedRecipeIds.length}品の献立を保存しました`, 'success');
       }
       
       this.hideMealModal();
@@ -1220,6 +1262,33 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       console.error('献立保存エラー:', error);
       this.showMessage('献立の保存に失敗しました', 'error');
     }
+  }
+  
+  renderSelectedRecipes() {
+    const container = document.getElementById('selected-recipes');
+    if (!container) return;
+    
+    if (this.selectedRecipeIds.length === 0) {
+      container.innerHTML = '<p class="no-selection">選択されたレシピはありません</p>';
+      return;
+    }
+    
+    const selectedRecipes = this.recipes.filter(recipe => 
+      this.selectedRecipeIds.includes(recipe.id)
+    );
+    
+    let html = '<div class="selected-recipes-list">';
+    selectedRecipes.forEach(recipe => {
+      html += `
+        <div class="selected-recipe-item">
+          <span class="selected-recipe-title">${this.escapeHtml(recipe.title)}</span>
+          <button class="btn-icon remove-selected" onclick="window.app.toggleRecipeSelection('${recipe.id}')" title="削除">×</button>
+        </div>
+      `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
   }
 
   showMessage(message, type = 'info') {
