@@ -383,6 +383,12 @@ class CoupleRecipeApp {
       // 新規追加モード
       document.getElementById('recipe-modal-title').textContent = 'レシピ追加';
       form.reset();
+      
+      // 検索ワードからの作成の場合、タイトルに設定
+      if (this.pendingRecipeTitle) {
+        document.getElementById('recipe-title').value = this.pendingRecipeTitle;
+        this.pendingRecipeTitle = null;
+      }
     }
 
     this.renderTagCheckboxes(recipe);
@@ -770,6 +776,10 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
               ${mealPlan.recipes ? 
                 `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
                 '<span class="meal-title">レシピなし</span>'
+              }
+              ${mealPlan.recipes && mealPlan.recipes.cooking_time ? 
+                `<div class="meal-cooking-time">⏱️ ${this.formatCookingTime(mealPlan.recipes.cooking_time)}</div>` : 
+                ''
               }
               ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
             </div>
@@ -1183,11 +1193,16 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       `;
     });
     
-    if (filteredRecipes.length === 0 && searchTerm) {
+    if (sortedRecipes.length === 0 && searchTerm) {
       html += `
-        <div class="recipe-option" style="text-align: center; color: #999;">
-          <div class="recipe-option-info">
-            <div class="recipe-option-title">該当するレシピがありません</div>
+        <div class="no-results-section">
+          <div class="no-results-message">
+            <p>「${this.escapeHtml(searchTerm)}」に一致するレシピが見つかりません</p>
+          </div>
+          <div class="recipe-option new-recipe-option" onclick="window.app.createNewRecipeFromSearch('${this.escapeHtml(searchTerm)}')">
+            <div class="recipe-option-info">
+              <div class="recipe-option-title">+ 「${this.escapeHtml(searchTerm)}」のレシピを作成</div>
+            </div>
           </div>
         </div>
       `;
@@ -1213,6 +1228,14 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
   createNewRecipeFromMeal() {
     // 献立情報を保持したまま新しいレシピを作成
     this.pendingMealPlan = this.currentMealEdit;
+    this.hideMealModal();
+    this.showRecipeModal();
+  }
+  
+  createNewRecipeFromSearch(searchTerm) {
+    // 検索ワードをタイトルに設定してレシピ作成
+    this.pendingMealPlan = this.currentMealEdit;
+    this.pendingRecipeTitle = searchTerm;
     this.hideMealModal();
     this.showRecipeModal();
   }

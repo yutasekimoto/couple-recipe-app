@@ -650,16 +650,16 @@ body {
     width: 24px;
     height: 24px;
     font-size: 14px;
-    background: rgba(220, 53, 69, 0.1);
+    background: transparent;
     color: #DC3545;
-    border: 1px solid #DC3545;
+    border: none;
     border-radius: 50%;
     transition: all 0.2s ease;
 }
 
 .delete-meal-type:hover {
-    background: #DC3545;
-    color: white;
+    background: rgba(220, 53, 69, 0.1);
+    color: #DC3545;
 }
 
 .meal-content {
@@ -701,6 +701,15 @@ body {
     font-weight: 500;
     color: #333333;
     margin-bottom: 4px;
+}
+
+.meal-cooking-time {
+    font-size: 12px;
+    color: #666666;
+    margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .meal-notes {
@@ -1265,6 +1274,23 @@ body {
     padding: 20px;
     border: 2px dashed #E0E0E0;
     border-radius: 8px;
+    margin: 0;
+}
+
+.no-results-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    text-align: center;
+}
+
+.no-results-message {
+    color: #666666;
+    font-size: 14px;
+}
+
+.no-results-message p {
     margin: 0;
 }
 
