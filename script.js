@@ -1157,8 +1157,12 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     let html = '';
     
     // 新規レシピ作成オプション
+    const createFunction = searchTerm ? 
+      `window.app.createNewRecipeFromSearch('${this.escapeHtml(searchTerm)}')` : 
+      'window.app.createNewRecipeFromMeal()';
+    
     html += `
-      <div class="recipe-option new-recipe-option" onclick="window.app.createNewRecipeFromMeal()">
+      <div class="recipe-option new-recipe-option" onclick="${createFunction}">
         <div class="recipe-option-info">
           <div class="recipe-option-title">+ 新しいレシピを作成</div>
         </div>
@@ -1197,12 +1201,8 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
       html += `
         <div class="no-results-section">
           <div class="no-results-message">
-            <p>該当するレシピが見つかりません</p>
-          </div>
-          <div class="recipe-option new-recipe-option" onclick="window.app.createNewRecipeFromSearch('${this.escapeHtml(searchTerm)}')">
-            <div class="recipe-option-info">
-              <div class="recipe-option-title">+ 新しいレシピを作成</div>
-            </div>
+            <p>「${this.escapeHtml(searchTerm)}」に該当するレシピが見つかりません</p>
+            <p class="search-suggestion">上の「新しいレシピを作成」からレシピを追加できます</p>
           </div>
         </div>
       `;
