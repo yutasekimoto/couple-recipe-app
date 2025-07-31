@@ -452,6 +452,16 @@ body {
     font-size: 14px;
 }
 
+.effort-level {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    font-size: 12px;
+    font-weight: 500;
+}
+
 .recipe-link {
     margin-bottom: 15px;
 }

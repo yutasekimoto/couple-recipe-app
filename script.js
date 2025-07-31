@@ -361,6 +361,7 @@ class CoupleRecipeApp {
       document.getElementById('recipe-title').value = recipe.title || '';
       document.getElementById('recipe-url').value = recipe.recipe_url || '';
       document.getElementById('recipe-description').value = recipe.description || '';
+      document.getElementById('recipe-effort-level').value = recipe.effort_level || 2;
     } else {
       // 新規追加モード
       document.getElementById('recipe-modal-title').textContent = 'レシピ追加';
@@ -383,6 +384,7 @@ class CoupleRecipeApp {
       title: formData.get('recipe-title') || document.getElementById('recipe-title').value,
       recipe_url: document.getElementById('recipe-url').value || null,
       description: document.getElementById('recipe-description').value || null,
+      effort_level: parseInt(document.getElementById('recipe-effort-level').value) || 2,
       user_id: this.currentUser.id
     };
 
@@ -509,6 +511,11 @@ class CoupleRecipeApp {
         
         ${recipe.description ? `<p class="recipe-description">${this.escapeHtml(recipe.description)}</p>` : ''}
         
+        <div class="recipe-meta">
+          <div class="meta-item">
+            <span class="effort-level">${this.getEffortLevelDisplay(recipe.effort_level)}</span>
+          </div>
+        </div>
         
         ${recipe.recipe_url ? `
           <div class="recipe-link">
@@ -1027,6 +1034,20 @@ ${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  // 手間レベルの表示用ヘルパー
+  getEffortLevelDisplay(level) {
+    switch (parseInt(level)) {
+      case 1:
+        return '🟢 簡単';
+      case 2:
+        return '🟡 普通';
+      case 3:
+        return '🔴 手間';
+      default:
+        return '🟡 普通';
+    }
   }
 
   showMessage(message, type = 'info') {
