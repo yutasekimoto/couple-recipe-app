@@ -1,11 +1,13 @@
-# Deploy Trigger - Profile Persistence Fix
+# Deploy Trigger - Profile Form Fix
 
-プロフィール永続化機能を実装しました。
-リロード後もニックネームと役割が保持されるように修正。
+プロフィールフォームのID不一致を修正しました。
 
 ### 修正内容
-- config.js: updateProfile メソッド追加
-- script.js: saveProfile メソッド完全実装
-- プロフィール表示機能の改善
+- script.js内の要素ID参照を修正
+- profile-nickname → user-nickname
+- profile-role → user-role
+- HTMLとJavaScriptの整合性を確保
 
-Generated at: 2025-08-02T07:30:00Z
+これでプロフィール保存が正常に動作するはずです。
+
+Generated at: 2025-08-02T07:35:00Z

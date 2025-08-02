@@ -399,8 +399,8 @@ class CoupleRecipeApp {
     if (modal) {
       // 現在のプロフィール情報をフォームに設定
       if (this.currentUser) {
-        const nicknameInput = document.getElementById('profile-nickname');
-        const roleInputs = document.querySelectorAll('input[name="profile-role"]');
+        const nicknameInput = document.getElementById('user-nickname');
+        const roleInputs = document.querySelectorAll('input[name="user-role"]');
         
         if (nicknameInput && this.currentUser.nickname) {
           nicknameInput.value = this.currentUser.nickname;
@@ -426,8 +426,8 @@ class CoupleRecipeApp {
 
   async saveProfile() {
     try {
-      const nickname = document.getElementById('profile-nickname')?.value;
-      const role = document.querySelector('input[name="profile-role"]:checked')?.value;
+      const nickname = document.getElementById('user-nickname')?.value;
+      const role = document.querySelector('input[name="user-role"]:checked')?.value;
       
       if (!nickname || !role) {
         this.showMessage('ニックネームと役割を入力してください', 'error');
