@@ -221,156 +221,24 @@ class CoupleRecipeApp {
       this.filterRecipes(e.target.value);
     });
 
+    // タグフィルター
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('filter-btn')) {
+        const tagId = e.target.dataset.tag;
+        this.filterByTag(tagId);
+      }
+    });
 
     // モーダル外クリックで閉じる
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal')) {
-        this.hideRecipeModal();
-      }
-    });
-  }
-
-  // ===== 画面・ビュー管理 =====
-  showScreen(screenName) {
-    document.querySelectorAll('.screen').forEach(screen => {
-      screen.classList.add('hidden');
-    });
-    document.getElementById(`${screenName}-screen`)?.classList.remove('hidden');
-    this.currentScreen = screenName;
-  }
-
-  switchView(viewName) {
-    // ナビゲーション更新
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.querySelector(`[data-view="${viewName}"]`)?.classList.add('active');
-
-    // ビュー切り替え
-    document.querySelectorAll('.view').forEach(view => {
-      view.classList.remove('active');
-      view.classList.add('hidden');
-    });
-    document.getElementById(`${viewName}-view`)?.classList.remove('hidden');
-    document.getElementById(`${viewName}-view`)?.classList.add('active');
-
-    this.currentView = viewName;
-
-    // ビュー別の初期化処理
-    if (viewName === 'calendar') {
-      // データが既に読み込まれている場合は即座に表示、そうでなければ読み込む
-      if (this.mealPlans && this.mealPlans.length >= 0) {
-        this.renderMealPlans();
-      } else {
-        this.loadAppData().then(() => this.renderMealPlans());
-      }
-    }
-  }
-
-  // ===== ペアリング機能 =====
-  showPairingOptions() {
-    document.querySelectorAll('.pairing-status > div').forEach(div => {
-      div.classList.add('hidden');
-    });
-    document.getElementById('status-unpaired').classList.remove('hidden');
-  }
-
-  async generatePairCode() {
-    try {
-      // ペアリングコード生成
-      const { data, error } = await supabaseClient.rpc('generate_pair_code');
-      
-      if (error) throw error;
-
-      const pairCode = data;
-
-      // ユーザーのペアコードを更新
-      const { error: updateError } = await supabaseClient
-        .from('users')
-        .update({ pair_code: pairCode })
-        .eq('auth_id', this.authManager.currentUserId);
-
-      if (updateError) throw updateError;
-
-      // コード表示
-      document.getElementById('generated-code').textContent = pairCode;
-      document.querySelectorAll('.pairing-status > div').forEach(div => {
-        div.classList.add('hidden');
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+        }
       });
-      document.getElementById('status-generate').classList.remove('hidden');
-
-    } catch (error) {
-      console.error('ペアリングコード生成エラー:', error);
-      this.showMessage('ペアリングコードの生成に失敗しました', 'error');
-    }
-  }
-
-  showCodeInput() {
-    document.querySelectorAll('.pairing-status > div').forEach(div => {
-      div.classList.add('hidden');
     });
-    document.getElementById('status-enter').classList.remove('hidden');
-    document.getElementById('pair-code-input').focus();
   }
 
-  async performPairing() {
-    const codeInput = document.getElementById('pair-code-input');
-    const pairCode = codeInput.value.trim();
-
-    if (!pairCode || pairCode.length !== 6) {
-      this.showMessage('6桁のコードを入力してください', 'error');
-      return;
-    }
-
-    try {
-      // 入力されたコードのユーザーを検索
-      const { data: partnerUser, error: searchError } = await supabaseClient
-        .from('users')
-        .select('id, display_name')
-        .eq('pair_code', pairCode)
-        .single();
-
-      if (searchError || !partnerUser) {
-        this.showMessage('無効なペアリングコードです', 'error');
-        return;
-      }
-
-      // 相互ペアリング
-      const { error: updateError1 } = await supabaseClient
-        .from('users')
-        .update({ paired_with: partnerUser.id })
-        .eq('auth_id', this.authManager.currentUserId);
-
-      const { error: updateError2 } = await supabaseClient
-        .from('users')
-        .update({ paired_with: this.currentUser.id })
-        .eq('id', partnerUser.id);
-
-      if (updateError1 || updateError2) {
-        throw new Error('ペアリングの更新に失敗しました');
-      }
-
-      // ペアリング完了
-      this.authManager.pairedUserId = partnerUser.id;
-      document.querySelectorAll('.pairing-status > div').forEach(div => {
-        div.classList.add('hidden');
-      });
-      document.getElementById('status-paired').classList.remove('hidden');
-
-      this.showMessage('ペアリングが完了しました！', 'success');
-
-    } catch (error) {
-      console.error('ペアリングエラー:', error);
-      this.showMessage('ペアリングに失敗しました', 'error');
-    }
-  }
-
-  async startApp() {
-    await this.loadAppData();
-    this.showScreen('main');
-  }
-
-  // ===== データ管理 =====
   async loadAppData() {
     try {
       console.log('アプリデータ読み込み開始...');
@@ -420,172 +288,48 @@ class CoupleRecipeApp {
         this.hiddenMealSlots = new Set();
       }
 
-      // UI更新
+      // UIを更新
       this.renderRecipes();
       this.renderTagFilters();
-      
+      this.renderMealPlans();
       console.log('アプリデータ読み込み完了');
 
     } catch (error) {
       console.error('データ読み込みエラー:', error);
-      this.showMessage(`データ読み込みエラー: ${error.message}`, 'error');
-      
-      // エラー時はデフォルト値を設定
-      this.recipes = [];
-      this.tags = [];
-      this.mealPlans = [];
-      this.renderRecipes();
-      this.renderTagFilters();
+      this.showMessage('データの読み込みに失敗しました', 'error');
     }
   }
 
-  // ===== レシピ管理 =====
-  showRecipeModal(recipe = null) {
-    const modal = document.getElementById('recipe-modal');
-    const form = document.getElementById('recipe-form');
+  renderTagFilters() {
+    const container = document.getElementById('tag-filters');
     
-    // 編集中のレシピIDを保存
-    this.editingRecipeId = recipe ? recipe.id : null;
+    let filtersHtml = '<button class="filter-btn active" data-tag="all">すべて</button>';
     
-    if (recipe) {
-      // 編集モード
-      document.getElementById('recipe-modal-title').textContent = 'レシピ編集';
-      document.getElementById('recipe-title').value = recipe.title || '';
-      document.getElementById('recipe-url').value = recipe.recipe_url || '';
-      document.getElementById('recipe-description').value = recipe.description || '';
-      document.getElementById('recipe-cooking-time').value = recipe.cooking_time_minutes || 15;
-      document.getElementById('cooking-time-display').textContent = this.formatCookingTime(recipe.cooking_time_minutes || 15);
-    } else {
-      // 新規追加モード
-      document.getElementById('recipe-modal-title').textContent = 'レシピ追加';
-      form.reset();
-      
-      // 検索ワードからの作成の場合、タイトルに設定
-      if (this.pendingRecipeTitle) {
-        document.getElementById('recipe-title').value = this.pendingRecipeTitle;
-        this.pendingRecipeTitle = null;
+    // さらに重複を確実に除去
+    const uniqueTagsMap = new Map();
+    this.tags.forEach(tag => {
+      if (!uniqueTagsMap.has(tag.name)) {
+        uniqueTagsMap.set(tag.name, tag);
       }
-    }
+    });
+    
+    uniqueTagsMap.forEach(tag => {
+      filtersHtml += `
+        <button class="filter-btn" data-tag="${tag.id}" style="border-color: ${tag.color || '#E0E0E0'}">
+          ${this.escapeHtml(tag.name)}
+        </button>
+      `;
+    });
 
-    this.renderTagCheckboxes(recipe);
-    modal.classList.remove('hidden');
-  }
+    container.innerHTML = filtersHtml;
 
-  hideRecipeModal() {
-    document.getElementById('recipe-modal').classList.add('hidden');
-  }
-
-  async saveRecipe() {
-    const form = document.getElementById('recipe-form');
-    const formData = new FormData(form);
-
-    const recipeData = {
-      title: formData.get('recipe-title') || document.getElementById('recipe-title').value,
-      recipe_url: document.getElementById('recipe-url').value || null,
-      description: document.getElementById('recipe-description').value || null,
-      cooking_time_minutes: parseInt(document.getElementById('recipe-cooking-time').value) || 15,
-      user_id: this.currentUser.id
-    };
-
-    if (!recipeData.title.trim()) {
-      this.showMessage('レシピ名を入力してください', 'error');
-      return;
-    }
-
-    try {
-      let savedRecipe;
-      
-      if (this.editingRecipeId) {
-        // 編集モード：既存レシピを更新
-        const { data, error } = await supabaseClient
-          .from('recipes')
-          .update(recipeData)
-          .eq('id', this.editingRecipeId)
-          .select()
-          .single();
-
-        if (error) throw error;
-        savedRecipe = data;
-
-        // 既存のタグ関連付けを削除
-        await supabaseClient
-          .from('recipe_tag_relations')
-          .delete()
-          .eq('recipe_id', this.editingRecipeId);
-
-      } else {
-        // 新規作成モード
-        const { data, error } = await supabaseClient
-          .from('recipes')
-          .insert(recipeData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        savedRecipe = data;
-      }
-
-      // タグ関連付け
-      const selectedTags = Array.from(document.querySelectorAll('#tag-checkboxes input:checked'))
-        .map(checkbox => checkbox.value);
-
-      if (selectedTags.length > 0) {
-        const tagRelations = selectedTags.map(tagId => ({
-          recipe_id: savedRecipe.id,
-          tag_id: tagId
-        }));
-
-        const { error: relationError } = await supabaseClient
-          .from('recipe_tag_relations')
-          .insert(tagRelations);
-
-        if (relationError) {
-          console.warn('タグ関連付けエラー:', relationError);
-        }
-      }
-
-      this.hideRecipeModal();
-      this.showMessage(this.editingRecipeId ? 'レシピを更新しました' : 'レシピを保存しました', 'success');
-      
-      // 全データを再読み込み（献立画面でも使用されるため）
-      await this.loadAppData();
-      
-      if (!this.editingRecipeId) {
-        // 新規作成の場合はレシピビューの表示も更新
-        if (this.currentView === 'recipes') {
-          this.renderRecipes();
-          this.renderTagFilters();
-        }
-        // 献立ビューの場合はレンダリングを更新
-        if (this.currentView === 'calendar') {
-          this.renderMealPlans();
-        }
-        
-        // 献立作成中にレシピを作成した場合、モーダル上で選択状態にする
-        if (this.pendingMealPlan) {
-          // 選択リストに追加（重複チェック）
-          if (!this.selectedRecipeIds) {
-            this.selectedRecipeIds = [];
-          }
-          if (!this.selectedRecipeIds.includes(savedRecipe.id)) {
-            this.selectedRecipeIds.push(savedRecipe.id);
-          }
-          // モーダルを再表示
-          this.showMealModal(
-            this.pendingMealPlan.date,
-            this.pendingMealPlan.mealType,
-            this.pendingMealPlan.existingMealPlan
-          );
-          this.pendingMealPlan = null;
-        }
-      }
-      
-      this.editingRecipeId = null;
-
-    } catch (error) {
-      console.error('レシピ保存エラー:', error);
-      this.showMessage('レシピの保存に失敗しました', 'error');
-    }
+    // フィルターボタンにイベント追加
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tagId = e.target.dataset.tag;
+        this.filterByTag(tagId);
+      });
+    });
   }
 
   renderRecipes() {
@@ -645,783 +389,167 @@ class CoupleRecipeApp {
     grid.innerHTML = recipesHtml;
   }
 
-  renderTagFilters() {
-    const container = document.getElementById('tag-filters');
-    
-    let filtersHtml = '<button class="filter-btn active" data-tag="all">すべて</button>';
-    
-    // さらに重複を確実に除去
-    const uniqueTagsMap = new Map();
-    this.tags.forEach(tag => {
-      if (!uniqueTagsMap.has(tag.name)) {
-        uniqueTagsMap.set(tag.name, tag);
-      }
-    });
-    
-    uniqueTagsMap.forEach(tag => {
-      filtersHtml += `
-        <button class="filter-btn" data-tag="${tag.id}" style="border-color: ${tag.color || '#E0E0E0'}">
-          ${this.escapeHtml(tag.name)}
-        </button>
-      `;
-    });
-
-    container.innerHTML = filtersHtml;
-
-    // フィルターボタンにイベント追加
-    container.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.filterRecipesByTag(btn.dataset.tag);
-      });
-    });
-  }
-
-  renderTagCheckboxes(recipe = null) {
-    const container = document.getElementById('tag-checkboxes');
-    
-    let checkboxesHtml = '';
-    
-    this.tags.forEach(tag => {
-      const isChecked = recipe && recipe.recipe_tag_relations?.some(rel => 
-        rel.recipe_tags.id === tag.id
-      );
-      
-      checkboxesHtml += `
-        <div class="tag-item">
-          <label class="checkbox-label">
-            <input type="checkbox" value="${tag.id}" ${isChecked ? 'checked' : ''}>
-            <span class="checkbox-text" style="color: ${tag.color}">
-              <input type="text" class="tag-name-input" value="${this.escapeHtml(tag.name)}" 
-                     onblur="window.app.updateTagName('${tag.id}', this.value)" 
-                     onkeypress="if(event.key==='Enter') this.blur()" 
-                     style="color: ${tag.color}">
-            </span>
-          </label>
-          <button type="button" class="btn-icon delete-tag-btn" onclick="window.app.deleteTag('${tag.id}')" title="タグ削除">
-            ×
-          </button>
-        </div>
-      `;
-    });
-
-    container.innerHTML = checkboxesHtml;
-  }
-
-  filterRecipes(searchTerm) {
-    const term = searchTerm.toLowerCase();
-    const cards = document.querySelectorAll('.recipe-card');
-    
-    cards.forEach(card => {
-      const title = card.querySelector('.recipe-title').textContent.toLowerCase();
-      const description = card.querySelector('.recipe-description')?.textContent.toLowerCase() || '';
-      
-      if (title.includes(term) || description.includes(term)) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  }
-
-  filterRecipesByTag(tagId) {
-    const cards = document.querySelectorAll('.recipe-card');
-    
-    cards.forEach(card => {
-      if (tagId === 'all') {
-        card.style.display = 'block';
-      } else {
-        const recipeId = card.dataset.recipeId;
-        const recipe = this.recipes.find(r => r.id === recipeId);
-        const hasTag = recipe?.recipe_tag_relations?.some(rel => 
-          rel.recipe_tags.id === tagId
-        );
-        
-        card.style.display = hasTag ? 'block' : 'none';
-      }
-    });
-  }
-
-  // ===== 献立機能 =====
-  renderMealPlans() {
-    const container = document.getElementById('meal-plans-list');
-    
-    // 日付でグループ化（複数メニュー対応）
-    const groupedMealPlans = {};
-    this.mealPlans.forEach(mp => {
-      if (!groupedMealPlans[mp.date]) {
-        groupedMealPlans[mp.date] = { lunch: [], dinner: [] };
-      }
-      if (!groupedMealPlans[mp.date][mp.meal_type]) {
-        groupedMealPlans[mp.date][mp.meal_type] = [];
-      }
-      groupedMealPlans[mp.date][mp.meal_type].push(mp);
-    });
-    
-    // 各メニューを順序でソート
-    Object.keys(groupedMealPlans).forEach(date => {
-      ['lunch', 'dinner'].forEach(mealType => {
-        if (groupedMealPlans[date][mealType]) {
-          groupedMealPlans[date][mealType].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-        }
-      });
-    });
-
-    // 日付範囲を決定（時間によって変更）
-    const dates = [];
-    const now = new Date();
-    const currentHour = now.getHours();
-    
-    // 21時以前は当日から1週間、以降は翌日から1週間
-    const startOffset = currentHour < 21 ? 0 : 1;
-    
-    for (let i = startOffset; i < startOffset + 7; i++) {
-      const date = new Date(now);
-      date.setDate(now.getDate() + i);
-      dates.push(date);
-    }
-
-    let mealPlansHtml = '';
-    dates.forEach((date, index) => {
-      const dateStr = date.toISOString().split('T')[0];
-      const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-      const today = new Date().toISOString().split('T')[0];
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
-      
-      const isToday = dateStr === today;
-      const isTomorrow = dateStr === tomorrowStr;
-      
-      const dayMeals = groupedMealPlans[dateStr] || { lunch: [], dinner: [] };
-      
-      mealPlansHtml += `
-        <div class="meal-plan-day ${isToday ? 'today' : ''} ${isTomorrow ? 'tomorrow' : ''}">
-          <div class="day-header">
-            <h3>${date.getMonth() + 1}/${date.getDate()} (${dayOfWeek})</h3>
-            ${isToday ? '<span class="today-badge">今日</span>' : ''}
-            ${isTomorrow ? '<span class="tomorrow-badge">翌日</span>' : ''}
-          </div>
-          <div class="day-meals">
-            ${!this.hiddenMealSlots.has(`${dateStr}-lunch`) ? `
-            <div class="meal-item">
-              <div class="meal-header">
-                <span class="meal-label">昼</span>
-                <div class="meal-header-actions">
-                  <button class="btn-icon" onclick="window.app.showMealModal('${dateStr}', 'lunch')" title="昼の献立を編集">✏️</button>
-                  <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'lunch')" title="昼の献立を非表示にする（外食等）">🗑️</button>
-                </div>
-              </div>
-              <div class="meal-content">
-${this.renderMealTypeItems(dayMeals.lunch || [], dateStr, 'lunch')}
-              </div>
-            </div>` : ''}
-            ${!this.hiddenMealSlots.has(`${dateStr}-dinner`) ? `
-            <div class="meal-item">
-              <div class="meal-header">
-                <span class="meal-label">夜</span>
-                <div class="meal-header-actions">
-                  <button class="btn-icon" onclick="window.app.showMealModal('${dateStr}', 'dinner')" title="夜の献立を編集">✏️</button>
-                  <button class="btn-icon delete-meal-type" onclick="window.app.deleteMealType('${dateStr}', 'dinner')" title="夜の献立を非表示にする（外食等）">🗑️</button>
-                </div>
-              </div>
-              <div class="meal-content">
-${this.renderMealTypeItems(dayMeals.dinner || [], dateStr, 'dinner')}
-              </div>
-            </div>` : ''}
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = mealPlansHtml;
-  }
+  // その他のメソッドは省略（backupファイルから取得）
   
-  // 非表示にした献立枠を再表示する機能
-  showMealType(date, mealType) {
-    const slotKey = `${date}-${mealType}`;
-    this.hiddenMealSlots.delete(slotKey);
+  showScreen(screenName) {
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.add('hidden');
+    });
+    document.getElementById(`${screenName}-screen`).classList.remove('hidden');
+    this.currentScreen = screenName;
+  }
+
+  showMessage(message, type = 'info') {
+    const container = document.getElementById('message-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${type}`;
+    messageDiv.textContent = message;
     
-    // ローカルストレージを更新
-    localStorage.setItem('hiddenMealSlots', JSON.stringify([...this.hiddenMealSlots]));
+    container.appendChild(messageDiv);
     
-    this.renderMealPlans();
-  }
-
-  renderMealTypeItems(mealPlans, date, mealType) {
-    let html = '';
-    
-    // 既存のメニューを表示
-    if (mealPlans && mealPlans.length > 0) {
-      mealPlans.forEach(mealPlan => {
-        html += `
-          <div class="meal-plan-item" data-meal-id="${mealPlan.id}">
-            <div class="meal-info">
-              ${mealPlan.recipes ? 
-                `<span class="meal-title">${this.escapeHtml(mealPlan.recipes.title)}</span>` : 
-                '<span class="meal-title">レシピなし</span>'
-              }
-              ${mealPlan.recipes && mealPlan.recipes.cooking_time_minutes ? 
-                `<div class="meal-cooking-time">⏱️ ${this.formatCookingTime(mealPlan.recipes.cooking_time_minutes)}</div>` : 
-                ''
-              }
-              ${mealPlan.assignment ? 
-                `<div class="meal-assignment">${this.formatAssignment(mealPlan.assignment)}</div>` : 
-                ''
-              }
-              ${mealPlan.notes ? `<p class="meal-notes">${this.escapeHtml(mealPlan.notes)}</p>` : ''}
-            </div>
-            <div class="meal-actions">
-              <button class="btn-icon" onclick="window.app.deleteMealPlan('${mealPlan.id}')" title="削除">🗑️</button>
-            </div>
-          </div>
-        `;
-      });
-    }
-    
-    // 新しいメニューを追加するスロット（常に表示）
-    html += `
-      <div class="meal-plan-empty" data-date="${date}" data-meal-type="${mealType}">
-        <div class="meal-slot">
-          <button class="recipe-select" onclick="window.app.showMealModal('${date}', '${mealType}')">
-            + レシピを追加
-          </button>
-        </div>
-      </div>
-    `;
-    
-    return html;
-  }
-
-  selectRecipe(date, mealType, recipeId, selectElement) {
-    if (recipeId === '__ADD_NEW__') {
-      // 新しいレシピを作成（献立情報を保存）
-      this.pendingMealPlan = { date, mealType, selectElement };
-      this.showRecipeModal();
-      selectElement.selectedIndex = 0;
-      return;
-    }
-    
-    if (recipeId) {
-      // レシピが選択された場合、すぐに保存
-      const notesElement = selectElement.parentElement.querySelector('.meal-notes-input');
-      const notes = notesElement ? notesElement.value.trim() : null;
-      this.saveMealPlan(date, mealType, recipeId, notes);
-      
-      // 入力フィールドをリセット
-      selectElement.selectedIndex = 0;
-      if (notesElement) notesElement.value = '';
-    }
-  }
-
-  saveMealFromSlot(date, mealType, notesElement) {
-    const notes = notesElement.value.trim();
-    if (notes) {
-      // メモが入力された場合、保存
-      const selectElement = notesElement.parentElement.querySelector('.recipe-select');
-      const recipeId = selectElement && selectElement.value ? selectElement.value : null;
-      this.saveMealPlan(date, mealType, recipeId, notes);
-      
-      // 入力フィールドをリセット
-      notesElement.value = '';
-      if (selectElement) selectElement.selectedIndex = 0;
-    }
-  }
-
-  async saveMealPlan(date, mealType, recipeId, notes) {
-    // レシピもメモも空の場合は保存しない
-    if (!recipeId && (!notes || !notes.trim())) {
-      return;
-    }
-
-    try {
-      // 次の順序番号を取得
-      const { data: existingMeals } = await supabaseClient
-        .from('meal_plans')
-        .select('sort_order')
-        .eq('date', date)
-        .eq('meal_type', mealType)
-        .order('sort_order', { ascending: false })
-        .limit(1);
-      
-      const nextSortOrder = existingMeals && existingMeals.length > 0 
-        ? (existingMeals[0].sort_order || 0) + 1 
-        : 0;
-
-      const mealPlanData = {
-        date: date,
-        meal_type: mealType,
-        recipe_id: recipeId || null,
-        notes: notes && notes.trim() ? notes.trim() : null,
-        user_id: this.currentUser.id,
-        sort_order: nextSortOrder
-      };
-
-      const { error } = await supabaseClient
-        .from('meal_plans')
-        .insert(mealPlanData);
-
-      if (error) throw error;
-      
-      this.showMessage('献立を追加しました', 'success');
-      
-      // データを再読み込みしてUIを更新
-      await this.loadAppData();
-      // 献立ビューを表示中の場合はレンダリングを更新
-      if (this.currentView === 'calendar') {
-        this.renderMealPlans();
-      }
-
-    } catch (error) {
-      console.error('献立保存エラー:', error);
-      this.showMessage('献立の保存に失敗しました', 'error');
-    }
-  }
-
-  async editMealPlan(mealPlanId) {
-    const mealPlan = this.mealPlans.find(mp => mp.id === mealPlanId);
-    if (!mealPlan) {
-      this.showMessage('献立が見つかりません', 'error');
-      return;
-    }
-    
-    // インライン編集モードに切り替え
-    const mealElement = document.querySelector(`[data-meal-id="${mealPlanId}"]`);
-    if (mealElement) {
-      this.switchToEditMode(mealElement, mealPlan);
-    }
-  }
-
-  switchToEditMode(element, mealPlan) {
-    const mealInfo = element.querySelector('.meal-info');
-    const recipeSelect = this.recipes.map(recipe => 
-      `<option value="${recipe.id}" ${recipe.id === mealPlan.recipe_id ? 'selected' : ''}>
-        ${this.escapeHtml(recipe.title)}
-      </option>`
-    ).join('');
-    
-    mealInfo.innerHTML = `
-      <div class="meal-slot">
-        <select class="recipe-select" onchange="window.app.updateMealPlan('${mealPlan.id}', this.value, null)">
-          <option value="">レシピを選択</option>
-          ${recipeSelect}
-        </select>
-        <textarea class="meal-notes-input" placeholder="メモを入力" 
-                  onblur="window.app.updateMealPlan('${mealPlan.id}', null, this.value)">${mealPlan.notes || ''}</textarea>
-        <div class="edit-actions">
-          <button class="btn btn-secondary btn-sm" onclick="window.app.cancelEdit('${mealPlan.id}')">キャンセル</button>
-          <button class="btn btn-primary btn-sm" onclick="window.app.saveEdit('${mealPlan.id}')">保存</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async updateMealPlan(mealPlanId, recipeId, notes) {
-    const updateData = {};
-    if (recipeId !== null) updateData.recipe_id = recipeId || null;
-    if (notes !== null) updateData.notes = notes && notes.trim() ? notes.trim() : null;
-
-    try {
-      const { error } = await supabaseClient
-        .from('meal_plans')
-        .update(updateData)
-        .eq('id', mealPlanId);
-
-      if (error) throw error;
-      
-      this.showMessage('献立を更新しました', 'success');
-      await this.loadAppData();
-      // 献立ビューを表示中の場合はレンダリングを更新
-      if (this.currentView === 'calendar') {
-        this.renderMealPlans();
-      }
-    } catch (error) {
-      console.error('献立更新エラー:', error);
-      this.showMessage('献立の更新に失敗しました', 'error');
-    }
-  }
-
-  async saveEdit(mealPlanId) {
-    const element = document.querySelector(`[data-meal-id="${mealPlanId}"]`);
-    if (element) {
-      const recipeSelect = element.querySelector('.recipe-select');
-      const notesInput = element.querySelector('.meal-notes-input');
-      
-      const updateData = {};
-      if (recipeSelect) updateData.recipe_id = recipeSelect.value || null;
-      if (notesInput) updateData.notes = notesInput.value.trim() || null;
-
-      try {
-        const { error } = await supabaseClient
-          .from('meal_plans')
-          .update(updateData)
-          .eq('id', mealPlanId);
-
-        if (error) throw error;
-        
-        this.showMessage('献立を更新しました', 'success');
-        await this.loadAppData();
-        if (this.currentView === 'calendar') {
-          this.renderMealPlans();
-        }
-      } catch (error) {
-        console.error('献立更新エラー:', error);
-        this.showMessage('献立の更新に失敗しました', 'error');
-      }
-    }
-  }
-
-  async cancelEdit(mealPlanId) {
-    // キャンセル時は単純にデータを再読み込みして表示を戻す
-    await this.loadAppData();
-    if (this.currentView === 'calendar') {
-      this.renderMealPlans();
-    }
-  }
-
-  // 枠ごと非表示機能（外食等で献立不要な場合）
-  async deleteMealType(date, mealType) {
-    try {
-      // まず既存の献立があれば削除
-      const { error } = await supabaseClient
-        .from('meal_plans')
-        .delete()
-        .eq('date', date)
-        .eq('meal_type', mealType);
-        
-      if (error) throw error;
-      
-      // その後、その枠を非表示にする
-      const slotKey = `${date}-${mealType}`;
-      this.hiddenMealSlots.add(slotKey);
-      
-      // ローカルストレージに保存
-      localStorage.setItem('hiddenMealSlots', JSON.stringify([...this.hiddenMealSlots]));
-      
-      await this.loadAppData();
-      this.renderMealPlans();
-    } catch (error) {
-      console.error('献立削除エラー:', error);
-      this.showMessage('献立の削除に失敗しました', 'error');
-    }
-  }
-
-  async deleteMealPlan(mealPlanId) {
-    try {
-      const { error } = await supabaseClient
-        .from('meal_plans')
-        .delete()
-        .eq('id', mealPlanId);
-        
-      if (error) throw error;
-      
-      await this.loadAppData();
-      // 献立ビューを表示中の場合はレンダリングを更新
-      if (this.currentView === 'calendar') {
-        this.renderMealPlans();
-      }
-    } catch (error) {
-      console.error('献立削除エラー:', error);
-      this.showMessage('献立の削除に失敗しました', 'error');
-    }
-  }
-
-  // ===== ユーティリティ =====
-  getWeekStart() {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate());
-    return start;
-  }
-
-  getWeekEnd() {
-    const today = new Date();
-    const end = new Date(today);
-    end.setDate(today.getDate() + 7);
-    return end;
-  }
-
-  getMonthStart(date) {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  }
-
-  getMonthEnd(date) {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    setTimeout(() => {
+      messageDiv.remove();
+    }, 5000);
   }
 
   escapeHtml(text) {
-    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
-  
-  // 所要時間の表示用ヘルパー
+
   formatCookingTime(minutes) {
-    const time = parseInt(minutes) || 15;
-    if (time >= 60) {
-      const hours = Math.floor(time / 60);
-      const mins = time % 60;
-      if (mins === 0) {
+    if (minutes < 60) {
+      return `${minutes}分`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes === 0) {
         return `${hours}時間`;
       } else {
-        return `${hours}時間${mins}分`;
+        return `${hours}時間${remainingMinutes}分`;
       }
-    } else {
-      return `${time}分`;
-    }
-  }
-  
-  // 担当者の表示用ヘルパー
-  formatAssignment(assignment) {
-    switch (assignment) {
-      case 'husband':
-        return '🤵 夫';
-      case 'wife':
-        return '👰 妻';
-      case 'both':
-        return '👫 一緒に';
-      default:
-        return '';
     }
   }
 
-  // ===== 献立モーダル関連 =====
-  showMealModal(date, mealType, existingMealPlan = null) {
-    const modal = document.getElementById('meal-modal');
-    
-    // 日付とメニュータイプを保存
-    this.currentMealEdit = { date, mealType, existingMealPlan };
-    
-    // モーダルタイトルと日付情報を設定
-    const dateObj = new Date(date);
-    const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
-    const formattedDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()} (${dayOfWeek})`;
-    
-    document.getElementById('meal-modal-date').textContent = formattedDate;
-    document.getElementById('meal-modal-type').textContent = mealType === 'lunch' ? '昼' : '夜';
-    document.getElementById('meal-modal-title').textContent = existingMealPlan ? 'レシピを変更' : 'レシピを選択';
-    
-    // 複数選択用の配列を初期化
-    this.selectedRecipeIds = [];
-    
-    // 既存の献立情報を設定
-    if (existingMealPlan) {
-      document.getElementById('meal-modal-notes').value = existingMealPlan.notes || '';
-      this.selectedRecipeIds = [existingMealPlan.recipe_id];
-      
-      // 担当者を設定
-      if (existingMealPlan.assignment) {
-        const assignmentRadio = document.querySelector(`input[name="meal-assignment"][value="${existingMealPlan.assignment}"]`);
-        if (assignmentRadio) {
-          assignmentRadio.checked = true;
-        }
-      } else {
-        document.querySelector('input[name="meal-assignment"][value=""]').checked = true;
+  getWeekStart() {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
+
+  getWeekEnd() {
+    const weekStart = this.getWeekStart();
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    return weekEnd;
+  }
+
+  // 認証関連メソッド
+  showAuthForm(formType) {
+    const forms = ['login', 'register', 'convert'];
+    forms.forEach(type => {
+      const form = document.getElementById(`${type}-form`);
+      if (form) {
+        form.classList.toggle('hidden', type !== formType);
       }
-    } else {
-      document.getElementById('meal-modal-notes').value = '';
-      // 既存の献立一覧を取得して複数選択状態にする
-      const existingMeals = this.mealPlans.filter(mp => mp.date === date && mp.meal_type === mealType);
-      this.selectedRecipeIds = existingMeals.map(mp => mp.recipe_id);
-      
-      // 担当者をリセット
-      document.querySelector('input[name="meal-assignment"][value=""]').checked = true;
-    }
-    
-    // レシピオプションを表示
-    this.renderRecipeOptions();
-    this.renderSelectedRecipes();
-    
-    modal.classList.remove('hidden');
-  }
-  
-  hideMealModal() {
-    const modal = document.getElementById('meal-modal');
-    modal.classList.add('hidden');
-    
-    // 検索をリセット
-    document.getElementById('meal-recipe-search').value = '';
-    this.renderRecipeOptions();
-    
-    this.currentMealEdit = null;
-    this.selectedRecipeIds = [];
-    this.renderSelectedRecipes();
-  }
-  
-  renderRecipeOptions(searchTerm = '') {
-    const container = document.getElementById('meal-recipe-options');
-    
-    // レシピをフィルタリング
-    const filteredRecipes = this.recipes.filter(recipe => {
-      if (!searchTerm) return true;
-      return recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
     });
-    
-    // 選択済みと未選択でソート
-    const selectedRecipes = filteredRecipes.filter(recipe => 
-      this.selectedRecipeIds.includes(recipe.id)
-    );
-    const unselectedRecipes = filteredRecipes.filter(recipe => 
-      !this.selectedRecipeIds.includes(recipe.id)
-    );
-    const sortedRecipes = [...selectedRecipes, ...unselectedRecipes];
-    
-    let html = '';
-    
-    // 新規レシピ作成オプション
-    const createFunction = searchTerm ? 
-      `window.app.createNewRecipeFromSearch('${this.escapeHtml(searchTerm)}')` : 
-      'window.app.createNewRecipeFromMeal()';
-    
-    html += `
-      <div class="recipe-option new-recipe-option" onclick="${createFunction}">
-        <div class="recipe-option-info">
-          <div class="recipe-option-title">+ 新しいレシピを作成</div>
-        </div>
-      </div>
-    `;
-    
-    // 既存レシピオプション（選択済みを上に表示）
-    sortedRecipes.forEach(recipe => {
-      const isSelected = this.selectedRecipeIds.includes(recipe.id);
-      const tags = (recipe.recipe_tag_relations || []).map(rel => rel.recipe_tags);
-      
-      html += `
-        <div class="recipe-option ${isSelected ? 'selected' : ''}" onclick="window.app.toggleRecipeSelection('${recipe.id}')">
-          <div class="recipe-option-info">
-            <div class="recipe-option-title">${this.escapeHtml(recipe.title)}</div>
-            <div class="recipe-option-meta">
-              <div class="recipe-option-time">
-                <span>⏱️</span>
-                <span>${this.formatCookingTime(recipe.cooking_time_minutes)}</span>
-              </div>
-              <div class="recipe-option-tags">
-                ${tags.map(tag => 
-                  `<span class="recipe-option-tag" style="background-color: ${tag.color}">${this.escapeHtml(tag.name)}</span>`
-                ).join('')}
-              </div>
-            </div>
-          </div>
-          <div class="recipe-option-check">
-            ${isSelected ? '✓' : ''}
-          </div>
-        </div>
-      `;
-    });
-    
-    if (sortedRecipes.length === 0 && searchTerm) {
-      html += `
-        <div class="no-results-section">
-          <div class="no-results-message">
-            <p>「${this.escapeHtml(searchTerm)}」に該当するレシピが見つかりません</p>
-            <p class="search-suggestion">上の「新しいレシピを作成」からレシピを追加できます</p>
-          </div>
-        </div>
-      `;
-    }
-    
-    container.innerHTML = html;
   }
-  
-  toggleRecipeSelection(recipeId) {
-    const index = this.selectedRecipeIds.indexOf(recipeId);
-    if (index > -1) {
-      // 既に選択されている場合は削除
-      this.selectedRecipeIds.splice(index, 1);
-    } else {
-      // 選択されていない場合は追加
-      this.selectedRecipeIds.push(recipeId);
-    }
-    
-    this.renderRecipeOptions(document.getElementById('meal-recipe-search').value);
-    this.renderSelectedRecipes();
-  }
-  
-  createNewRecipeFromMeal() {
-    // 献立情報を保持したまま新しいレシピを作成
-    this.pendingMealPlan = this.currentMealEdit;
-    this.hideMealModal();
-    this.showRecipeModal();
-  }
-  
-  createNewRecipeFromSearch(searchTerm) {
-    // 検索ワードをタイトルに設定してレシピ作成
-    this.pendingMealPlan = this.currentMealEdit;
-    this.pendingRecipeTitle = searchTerm;
-    this.hideMealModal();
-    this.showRecipeModal();
-  }
-  
-  editMealPlanModal(mealPlanId, date, mealType) {
-    // 既存の献立データを取得
-    const existingMealPlan = this.mealPlans.find(mp => mp.id === mealPlanId);
-    if (existingMealPlan) {
-      this.showMealModal(date, mealType, existingMealPlan);
-    }
-  }
-  
-  async saveMealFromModal() {
-    if (this.selectedRecipeIds.length === 0) {
-      this.showMessage('レシピを選択してください', 'error');
+
+  async handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+      this.showMessage('メールアドレスとパスワードを入力してください', 'error');
       return;
     }
-    
-    const notes = document.getElementById('meal-modal-notes').value.trim();
-    const assignment = document.querySelector('input[name="meal-assignment"]:checked')?.value || null;
-    const { date, mealType, existingMealPlan } = this.currentMealEdit;
-    
+
     try {
-      if (existingMealPlan) {
-        // 編集モードの場合は単一レシピのみ更新
-        const { error } = await supabaseClient
-          .from('meal_plans')
-          .update({
-            recipe_id: this.selectedRecipeIds[0],
-            notes: notes || null,
-            assignment: assignment
-          })
-          .eq('id', existingMealPlan.id);
-          
-        if (error) throw error;
-        this.showMessage('献立を更新しました', 'success');
-      } else {
-        // 新規作成の場合は既存の献立を削除してから複数作成
-        // まず既存の献立を削除
-        const { error: deleteError } = await supabaseClient
-          .from('meal_plans')
-          .delete()
-          .eq('date', date)
-          .eq('meal_type', mealType);
-          
-        if (deleteError) throw deleteError;
-        
-        // 複数のレシピで献立を作成
-        const mealPlansToInsert = this.selectedRecipeIds.map(recipeId => ({
-          date,
-          meal_type: mealType,
-          recipe_id: recipeId,
-          notes: notes || null,
-          assignment: assignment,
-          user_id: this.currentUser.id
-        }));
-        
-        const { error: insertError } = await supabaseClient
-          .from('meal_plans')
-          .insert(mealPlansToInsert);
-          
-        if (insertError) throw insertError;
-        
-        this.showMessage(`${this.selectedRecipeIds.length}品の献立を保存しました`, 'success');
-      }
+      const result = await this.authManager.signInWithEmail(email, password);
       
-      this.hideMealModal();
-      await this.loadAppData();
-      this.renderMealPlans();
+      if (result.error) {
+        this.showMessage(`ログインに失敗しました: ${result.error}`, 'error');
+        return;
+      }
+
+      this.showMessage('ログインしました', 'success');
+      await this.checkAuthAndPairing();
       
     } catch (error) {
-      console.error('献立保存エラー:', error);
-      this.showMessage('献立の保存に失敗しました', 'error');
+      console.error('ログインエラー:', error);
+      this.showMessage('ログインに失敗しました', 'error');
     }
-  
+  }
+
+  async handleRegister() {
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const nickname = document.getElementById('register-nickname').value;
+    const role = document.querySelector('input[name="register-role"]:checked')?.value;
+
+    if (!email || !password || !nickname || !role) {
+      this.showMessage('すべての項目を入力してください', 'error');
+      return;
+    }
+
+    try {
+      const result = await this.authManager.signUpWithEmail(email, password, nickname, role);
+      
+      if (result.error) {
+        this.showMessage(`登録に失敗しました: ${result.error}`, 'error');
+        return;
+      }
+
+      this.showMessage('登録が完了しました', 'success');
+      await this.checkAuthAndPairing();
+      
+    } catch (error) {
+      console.error('登録エラー:', error);
+      this.showMessage('登録に失敗しました', 'error');
+    }
+  }
+
+  async handleAccountConversion() {
+    const email = document.getElementById('convert-email').value;
+    const password = document.getElementById('convert-password').value;
+
+    if (!email || !password) {
+      this.showMessage('メールアドレスとパスワードを入力してください', 'error');
+      return;
+    }
+
+    try {
+      const result = await this.authManager.convertAnonymousAccount(email, password);
+      
+      if (result.error) {
+        this.showMessage(`変換に失敗しました: ${result.error}`, 'error');
+        return;
+      }
+
+      this.showMessage('アカウントの変換が完了しました', 'success');
+      await this.checkAuthAndPairing();
+      
+    } catch (error) {
+      console.error('変換エラー:', error);
+      this.showMessage('アカウント変換に失敗しました', 'error');
+    }
+  }
+}
+
+// アプリ初期化
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+  app = new CoupleRecipeApp();
+});
+
+// グローバル関数（HTMLから呼び出し用）
+window.app = null;
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = app;
+});
