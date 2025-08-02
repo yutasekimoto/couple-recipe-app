@@ -211,6 +211,15 @@ class CoupleRecipeApp {
     document.getElementById('cancel-profile')?.addEventListener('click', () => this.hideProfileModal());
     document.getElementById('save-profile')?.addEventListener('click', () => this.saveProfile());
     
+    // メール認証チェックボックスの切り替え
+    document.getElementById('enable-email-auth')?.addEventListener('change', (e) => {
+      const emailFields = document.querySelectorAll('#user-email, #user-password, #user-password-confirm');
+      emailFields.forEach(field => {
+        field.required = e.target.checked;
+        field.parentElement.style.display = e.target.checked ? 'block' : 'none';
+      });
+    });
+    
     // 献立モーダル内のレシピ検索
     document.getElementById('meal-recipe-search')?.addEventListener('input', (e) => {
       this.renderRecipeOptions(e.target.value);
@@ -428,10 +437,32 @@ class CoupleRecipeApp {
     try {
       const nickname = document.getElementById('user-nickname')?.value;
       const role = document.querySelector('input[name="user-role"]:checked')?.value;
+      const email = document.getElementById('user-email')?.value;
+      const password = document.getElementById('user-password')?.value;
+      const passwordConfirm = document.getElementById('user-password-confirm')?.value;
+      const enableEmailAuth = document.getElementById('enable-email-auth')?.checked;
       
       if (!nickname || !role) {
         this.showMessage('ニックネームと役割を入力してください', 'error');
         return;
+      }
+      
+      // メール認証を有効にする場合のバリデーション
+      if (enableEmailAuth) {
+        if (!email || !password || !passwordConfirm) {
+          this.showMessage('メール認証を有効にする場合は、メールアドレスとパスワードを入力してください', 'error');
+          return;
+        }
+        
+        if (password !== passwordConfirm) {
+          this.showMessage('パスワードが一致しません', 'error');
+          return;
+        }
+        
+        if (password.length < 8) {
+          this.showMessage('パスワードは8文字以上で入力してください', 'error');
+          return;
+        }
       }
       
       // プロフィール保存
@@ -442,13 +473,26 @@ class CoupleRecipeApp {
         return;
       }
       
+      // メール認証設定がある場合はアカウント変換
+      if (enableEmailAuth && email && password) {
+        const convertResult = await this.authManager.convertAnonymousAccount(email, password);
+        
+        if (convertResult.error) {
+          this.showMessage(`メール認証の設定に失敗しました: ${convertResult.error}`, 'warning');
+          // プロフィール保存は成功しているので、警告レベルで続行
+        } else {
+          this.showMessage('プロフィールを保存し、メール認証を設定しました', 'success');
+        }
+      } else {
+        this.showMessage('プロフィールを保存しました', 'success');
+      }
+      
       // 現在のユーザー情報を更新
       this.currentUser = result.user;
       
       // UI表示を更新
       this.updateUserDisplay();
       
-      this.showMessage('プロフィールを保存しました', 'success');
       this.hideProfileModal();
       
     } catch (error) {

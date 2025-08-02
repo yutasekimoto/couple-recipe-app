@@ -1577,3 +1577,53 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ===== メール認証セクション ===== */
+.form-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(79, 139, 232, 0.05);
+    border: 1px solid rgba(79, 139, 232, 0.2);
+    border-radius: 12px;
+}
+
+.form-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.form-description {
+    font-size: 14px;
+    color: #666666;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.checkbox-group {
+    margin-top: 16px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333333;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #4F8BE8;
+}
+
+/* メール認証フィールドを初期状態で非表示 */
+#user-email,
+#user-password,
+#user-password-confirm {
+    display: none;
+}
