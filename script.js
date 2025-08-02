@@ -389,8 +389,96 @@ class CoupleRecipeApp {
     grid.innerHTML = recipesHtml;
   }
 
-  // その他のメソッドは省略（backupファイルから取得）
-  
+  renderMealPlans() {
+    // 献立表示の実装
+    console.log('献立を表示します');
+  }
+
+  showProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+    }
+  }
+
+  hideProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  saveProfile() {
+    console.log('プロフィールを保存');
+    this.hideProfileModal();
+  }
+
+  updateUserDisplay() {
+    console.log('ユーザー表示を更新');
+  }
+
+  filterByTag(tagId) {
+    console.log('タグでフィルタリング:', tagId);
+  }
+
+  filterRecipes(searchTerm) {
+    console.log('レシピを検索:', searchTerm);
+  }
+
+  switchView(view) {
+    console.log('ビューを切り替え:', view);
+  }
+
+  showRecipeModal() {
+    console.log('レシピモーダルを表示');
+  }
+
+  hideRecipeModal() {
+    console.log('レシピモーダルを非表示');
+  }
+
+  saveRecipe() {
+    console.log('レシピを保存');
+  }
+
+  addNewTag() {
+    console.log('新しいタグを追加');
+  }
+
+  hideMealModal() {
+    console.log('献立モーダルを非表示');
+  }
+
+  saveMealFromModal() {
+    console.log('献立を保存');
+  }
+
+  renderRecipeOptions(searchTerm) {
+    console.log('レシピオプションを表示:', searchTerm);
+  }
+
+  generatePairCode() {
+    console.log('ペアコードを生成');
+  }
+
+  showCodeInput() {
+    console.log('コード入力を表示');
+  }
+
+  performPairing() {
+    console.log('ペアリングを実行');
+  }
+
+  showPairingOptions() {
+    console.log('ペアリングオプションを表示');
+  }
+
+  startApp() {
+    console.log('アプリを開始');
+    this.loadAppData();
+    this.showScreen('main');
+  }
+
   showScreen(screenName) {
     document.querySelectorAll('.screen').forEach(screen => {
       screen.classList.add('hidden');
