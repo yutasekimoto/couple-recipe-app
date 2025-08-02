@@ -211,14 +211,6 @@ class CoupleRecipeApp {
     document.getElementById('cancel-profile')?.addEventListener('click', () => this.hideProfileModal());
     document.getElementById('save-profile')?.addEventListener('click', () => this.saveProfile());
     
-    // メール認証チェックボックスの切り替え
-    document.getElementById('enable-email-auth')?.addEventListener('change', (e) => {
-      const emailFields = document.querySelectorAll('#user-email, #user-password, #user-password-confirm');
-      emailFields.forEach(field => {
-        field.required = e.target.checked;
-        field.parentElement.style.display = e.target.checked ? 'block' : 'none';
-      });
-    });
     
     // 献立モーダル内のレシピ検索
     document.getElementById('meal-recipe-search')?.addEventListener('input', (e) => {
@@ -437,20 +429,19 @@ class CoupleRecipeApp {
     try {
       const nickname = document.getElementById('user-nickname')?.value;
       const role = document.querySelector('input[name="user-role"]:checked')?.value;
-      const email = document.getElementById('user-email')?.value;
+      const email = document.getElementById('user-email')?.value?.trim();
       const password = document.getElementById('user-password')?.value;
       const passwordConfirm = document.getElementById('user-password-confirm')?.value;
-      const enableEmailAuth = document.getElementById('enable-email-auth')?.checked;
       
       if (!nickname || !role) {
         this.showMessage('ニックネームと役割を入力してください', 'error');
         return;
       }
       
-      // メール認証を有効にする場合のバリデーション
-      if (enableEmailAuth) {
+      // メール認証のバリデーション（入力がある場合のみ）
+      if (email || password || passwordConfirm) {
         if (!email || !password || !passwordConfirm) {
-          this.showMessage('メール認証を有効にする場合は、メールアドレスとパスワードを入力してください', 'error');
+          this.showMessage('メールアドレス、パスワード、パスワード確認をすべて入力してください', 'error');
           return;
         }
         
@@ -474,7 +465,7 @@ class CoupleRecipeApp {
       }
       
       // メール認証設定がある場合はアカウント変換
-      if (enableEmailAuth && email && password) {
+      if (email && password) {
         const convertResult = await this.authManager.convertAnonymousAccount(email, password);
         
         if (convertResult.error) {

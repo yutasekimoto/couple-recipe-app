@@ -410,42 +410,4 @@ const DatabaseHelper = {
       return data || [];
     } catch (error) {
       console.error('タグ取得エラー:', error);
-      return [];
-    }
-  },
-  
-  // 献立関連
-  async getMealPlans(startDate, endDate) {
-    if (!supabaseClient) return [];
-    
-    try {
-      const { data, error } = await supabaseClient
-        .from('meal_plans')
-        .select(`
-          *,
-          recipes (
-            id, title, recipe_url, cooking_time_minutes
-          )
-        `)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true });
-      
-      if (error) {
-        console.error('献立取得エラー:', error);
-        return [];
-      }
-      
-      return data || [];
-    } catch (error) {
-      console.error('献立取得エラー:', error);
-      return [];
-    }
-  }
-};
-
-// グローバルに公開
-window.APP_CONFIG = APP_CONFIG;
-window.AuthManager = AuthManager;
-window.DatabaseHelper = DatabaseHelper;
-window.initializeSupabase = initializeSupabase;
+      return []
