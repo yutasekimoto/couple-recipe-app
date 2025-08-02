@@ -397,6 +397,22 @@ class CoupleRecipeApp {
   showProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) {
+      // 現在のプロフィール情報をフォームに設定
+      if (this.currentUser) {
+        const nicknameInput = document.getElementById('profile-nickname');
+        const roleInputs = document.querySelectorAll('input[name="profile-role"]');
+        
+        if (nicknameInput && this.currentUser.nickname) {
+          nicknameInput.value = this.currentUser.nickname;
+        }
+        
+        if (this.currentUser.role) {
+          roleInputs.forEach(input => {
+            input.checked = (input.value === this.currentUser.role);
+          });
+        }
+      }
+      
       modal.classList.remove('hidden');
     }
   }
@@ -408,13 +424,54 @@ class CoupleRecipeApp {
     }
   }
 
-  saveProfile() {
-    console.log('プロフィールを保存');
-    this.hideProfileModal();
+  async saveProfile() {
+    try {
+      const nickname = document.getElementById('profile-nickname')?.value;
+      const role = document.querySelector('input[name="profile-role"]:checked')?.value;
+      
+      if (!nickname || !role) {
+        this.showMessage('ニックネームと役割を入力してください', 'error');
+        return;
+      }
+      
+      // プロフィール保存
+      const result = await this.authManager.updateProfile(nickname, role);
+      
+      if (result.error) {
+        this.showMessage(`保存に失敗しました: ${result.error}`, 'error');
+        return;
+      }
+      
+      // 現在のユーザー情報を更新
+      this.currentUser = result.user;
+      
+      // UI表示を更新
+      this.updateUserDisplay();
+      
+      this.showMessage('プロフィールを保存しました', 'success');
+      this.hideProfileModal();
+      
+    } catch (error) {
+      console.error('プロフィール保存エラー:', error);
+      this.showMessage('保存に失敗しました', 'error');
+    }
   }
 
   updateUserDisplay() {
-    console.log('ユーザー表示を更新');
+    // プロフィールボタンのテキストを更新
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn && this.currentUser) {
+      const displayText = this.currentUser.nickname 
+        ? `${this.currentUser.nickname} (${this.currentUser.role === 'husband' ? '夫' : this.currentUser.role === 'wife' ? '妻' : this.currentUser.role || '未設定'})`
+        : 'プロフィール設定';
+      profileBtn.textContent = displayText;
+    }
+    
+    // その他のユーザー情報表示があれば更新
+    const userNameDisplay = document.getElementById('user-name-display');
+    if (userNameDisplay && this.currentUser?.nickname) {
+      userNameDisplay.textContent = this.currentUser.nickname;
+    }
   }
 
   filterByTag(tagId) {

@@ -326,6 +326,39 @@ class AuthManager {
       return null;
     }
   }
+  
+  // プロフィール更新
+  async updateProfile(nickname, role) {
+    if (!this.currentUserId) return { error: 'ユーザーが見つかりません' };
+    
+    try {
+      const { data, error } = await supabaseClient
+        .from('users')
+        .update({
+          nickname: nickname,
+          role: role,
+          display_name: nickname
+        })
+        .eq('auth_id', this.currentUserId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('プロフィール更新エラー:', error);
+        return { error: error.message };
+      }
+      
+      if (APP_CONFIG.debug) {
+        console.log('プロフィール更新成功:', data);
+      }
+      
+      return { user: data };
+      
+    } catch (error) {
+      console.error('プロフィール更新エラー:', error);
+      return { error: error.message };
+    }
+  }
 }
 
 // データベースヘルパー関数

@@ -1,7 +1,11 @@
-# Deploy Trigger
+# Deploy Trigger - Profile Persistence Fix
 
-This file is created to trigger a new deployment.
+プロフィール永続化機能を実装しました。
+リロード後もニックネームと役割が保持されるように修正。
 
-タグ重複表示問題を修正しました。
+### 修正内容
+- config.js: updateProfile メソッド追加
+- script.js: saveProfile メソッド完全実装
+- プロフィール表示機能の改善
 
-Generated at: 2025-01-31T16:00:00Z
+Generated at: 2025-08-02T07:30:00Z
