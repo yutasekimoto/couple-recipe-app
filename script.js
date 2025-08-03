@@ -218,6 +218,9 @@ class CoupleRecipeApp {
     document.getElementById('cancel-profile')?.addEventListener('click', () => this.hideProfileModal());
     document.getElementById('save-profile')?.addEventListener('click', () => this.saveProfile());
     
+    // ログアウト関連
+    document.getElementById('logout-btn')?.addEventListener('click', () => this.handleLogout());
+    
     
     // 献立モーダル内のレシピ検索
     document.getElementById('meal-recipe-search')?.addEventListener('input', (e) => {
@@ -675,55 +678,51 @@ class CoupleRecipeApp {
 
   async handleLogin() {
     const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
 
-    if (!email || !password) {
-      this.showMessage('メールアドレスとパスワードを入力してください', 'error');
+    if (!email) {
+      this.showMessage('メールアドレスを入力してください', 'error');
       return;
     }
 
     try {
-      const result = await this.authManager.signInWithEmail(email, password);
+      const result = await this.authManager.signInWithEmail(email);
       
       if (result.error) {
-        this.showMessage(`ログインに失敗しました: ${result.error}`, 'error');
+        this.showMessage(`マジックリンクの送信に失敗しました: ${result.error}`, 'error');
         return;
       }
 
-      this.showMessage('ログインしました', 'success');
-      await this.checkAuthAndPairing();
+      this.showMessage(`${email}にログイン用のリンクを送信しました。メールをご確認ください。`, 'success');
       
     } catch (error) {
-      console.error('ログインエラー:', error);
-      this.showMessage('ログインに失敗しました', 'error');
+      console.error('マジックリンク送信エラー:', error);
+      this.showMessage('マジックリンクの送信に失敗しました', 'error');
     }
   }
 
   async handleRegister() {
     const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
     const nickname = document.getElementById('register-nickname').value;
     const role = document.querySelector('input[name="register-role"]:checked')?.value;
 
-    if (!email || !password || !nickname || !role) {
+    if (!email || !nickname || !role) {
       this.showMessage('すべての項目を入力してください', 'error');
       return;
     }
 
     try {
-      const result = await this.authManager.signUpWithEmail(email, password, nickname, role);
+      const result = await this.authManager.signUpWithEmail(email, nickname, role);
       
       if (result.error) {
-        this.showMessage(`登録に失敗しました: ${result.error}`, 'error');
+        this.showMessage(`登録用リンクの送信に失敗しました: ${result.error}`, 'error');
         return;
       }
 
-      this.showMessage('登録が完了しました', 'success');
-      await this.checkAuthAndPairing();
+      this.showMessage(`${email}にアカウント作成用のリンクを送信しました。メールをご確認ください。`, 'success');
       
     } catch (error) {
       console.error('登録エラー:', error);
-      this.showMessage('登録に失敗しました', 'error');
+      this.showMessage('登録用リンクの送信に失敗しました', 'error');
     }
   }
 
@@ -750,6 +749,37 @@ class CoupleRecipeApp {
     } catch (error) {
       console.error('変換エラー:', error);
       this.showMessage('アカウント変換に失敗しました', 'error');
+    }
+  }
+
+  async handleLogout() {
+    try {
+      const result = await this.authManager.signOut();
+      
+      if (result.error) {
+        this.showMessage(`ログアウトに失敗しました: ${result.error}`, 'error');
+        return;
+      }
+
+      // ローカルデータをクリア
+      localStorage.removeItem('couple_app_user_id');
+      
+      this.showMessage('ログアウトしました', 'success');
+      
+      // 初期状態にリセット
+      this.currentUser = null;
+      this.recipes = [];
+      this.tags = [];
+      this.mealPlans = [];
+      
+      // ペアリング画面に戻る
+      setTimeout(() => {
+        this.showScreen('pairing');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      this.showMessage('ログアウトに失敗しました', 'error');
     }
   }
 }

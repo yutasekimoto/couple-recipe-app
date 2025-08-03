@@ -99,78 +99,63 @@ class AuthManager {
     }
   }
   
-  // メール認証でログイン
-  async signInWithEmail(email, password) {
+  // マジックリンクでメール認証（パスワードレス）
+  async signInWithEmail(email) {
     if (!supabaseClient) return null;
     
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
-        password: password
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
       
       if (error) {
-        console.error('ログインエラー:', error);
+        console.error('マジックリンク送信エラー:', error);
         return { error: error.message };
       }
       
-      this.currentUser = data.user;
-      this.currentUserId = data.user.id;
-      
       if (APP_CONFIG.debug) {
-        console.log('ログイン成功:', this.currentUserId);
+        console.log('マジックリンク送信成功:', email);
       }
       
-      return { user: data.user };
+      return { success: true, email: email };
       
     } catch (error) {
-      console.error('ログインエラー:', error);
+      console.error('マジックリンク送信エラー:', error);
       return { error: error.message };
     }
   }
   
-  // メール認証で新規登録
-  async signUpWithEmail(email, password, nickname, role) {
+  // マジックリンクで新規登録（パスワードレス）
+  async signUpWithEmail(email, nickname, role) {
     if (!supabaseClient) return null;
     
     try {
-      const { data, error } = await supabaseClient.auth.signUp({
+      // マジックリンクを送信
+      const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
-        password: password
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            nickname: nickname,
+            role: role,
+            is_new_user: true
+          }
+        }
       });
       
       if (error) {
-        console.error('登録エラー:', error);
+        console.error('登録用マジックリンク送信エラー:', error);
         return { error: error.message };
       }
       
-      if (data.user) {
-        // ユーザープロファイルを作成
-        const { error: profileError } = await supabaseClient
-          .from('users')
-          .insert({
-            auth_id: data.user.id,
-            nickname: nickname,
-            role: role,
-            display_name: nickname
-          });
-          
-        if (profileError) {
-          console.error('プロファイル作成エラー:', profileError);
-          return { error: 'プロファイルの作成に失敗しました' };
-        }
-        
-        this.currentUser = data.user;
-        this.currentUserId = data.user.id;
-        
-        if (APP_CONFIG.debug) {
-          console.log('登録成功:', this.currentUserId);
-        }
-        
-        return { user: data.user };
+      if (APP_CONFIG.debug) {
+        console.log('登録用マジックリンク送信成功:', email);
       }
       
-      return { error: 'ユーザー作成に失敗しました' };
+      return { success: true, email: email, nickname: nickname, role: role };
       
     } catch (error) {
       console.error('登録エラー:', error);
@@ -438,4 +423,19 @@ const DatabaseHelper = {
     
     try {
       const { data, error } = await supabaseClient
-        .from('meal_p
+        .from('meal_plans')
+        .select(`
+          *,
+          recipes (
+            id, title, recipe_url, cooking_time_minutes
+          )
+        `)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+      
+      if (error) {
+        console.error('献立取得エラー:', error);
+        return [];
+      }
+ 
