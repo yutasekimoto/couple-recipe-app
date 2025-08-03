@@ -478,7 +478,14 @@ class CoupleRecipeApp {
           this.showMessage(`メール認証の設定に失敗しました: ${convertResult.error}`, 'warning');
           // プロフィール保存は成功しているので、警告レベルで続行
         } else {
-          this.showMessage('プロフィールを保存し、メール認証を設定しました。確認メールをチェックしてください。', 'success');
+          const emailInfo = await this.authManager.checkEmailConfirmation();
+          console.log('メール確認状態:', emailInfo);
+          
+          if (convertResult.emailSent) {
+            this.showMessage(`プロフィールを保存し、${email}に確認メールを送信しました。メールが届かない場合はスパムフォルダもご確認ください。`, 'success');
+          } else {
+            this.showMessage('プロフィールを保存しました。', 'success');
+          }
         }
       } else {
         this.showMessage('プロフィールを保存しました', 'success');

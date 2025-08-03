@@ -223,13 +223,32 @@ class AuthManager {
       
       if (APP_CONFIG.debug) {
         console.log('アカウント変換成功:', this.currentUserId);
+        console.log('確認メール送信先:', email);
+        console.log('メール確認状態:', data.user?.email_confirmed_at);
       }
       
-      return { user: data.user };
+      return { user: data.user, emailSent: true };
       
     } catch (error) {
       console.error('アカウント変換エラー:', error);
       return { error: error.message };
+    }
+  }
+  
+  // メール確認状態をチェック
+  async checkEmailConfirmation() {
+    if (!supabaseClient || !this.currentUser) return null;
+    
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      return {
+        email: user?.email,
+        confirmed: !!user?.email_confirmed_at,
+        confirmedAt: user?.email_confirmed_at
+      };
+    } catch (error) {
+      console.error('メール確認状態チェックエラー:', error);
+      return null;
     }
   }
   
