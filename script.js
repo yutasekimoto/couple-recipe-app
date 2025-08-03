@@ -184,6 +184,7 @@ class CoupleRecipeApp {
     document.getElementById('back-to-options-2')?.addEventListener('click', () => this.showPairingOptions());
     document.getElementById('start-app-btn')?.addEventListener('click', () => this.startApp());
     document.getElementById('skip-pairing-btn')?.addEventListener('click', () => this.skipPairing());
+    document.getElementById('email-login-btn')?.addEventListener('click', () => this.showEmailLogin());
 
     // ナビゲーション
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -594,6 +595,12 @@ class CoupleRecipeApp {
       this.showProfileModal();
       this.showMessage('プロフィールを設定してください', 'info');
     }, 1000);
+  }
+
+  showEmailLogin() {
+    console.log('メールログイン画面を表示');
+    this.showScreen('auth');
+    this.showAuthForm('login');
   }
 
   showScreen(screenName) {
