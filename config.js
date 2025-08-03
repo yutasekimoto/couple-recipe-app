@@ -107,7 +107,7 @@ class AuthManager {
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: 'https://couple-recipe-app.vercel.app'
         }
       });
       
@@ -137,7 +137,7 @@ class AuthManager {
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: 'https://couple-recipe-app.vercel.app',
           data: {
             nickname: nickname,
             role: role,
@@ -200,7 +200,7 @@ class AuthManager {
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: 'https://couple-recipe-app.vercel.app'
         }
       });
       

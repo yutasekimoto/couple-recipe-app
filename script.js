@@ -38,6 +38,9 @@ class CoupleRecipeApp {
       this.authManager = new AuthManager();
       console.log('AuthManager作成完了');
 
+      // URLパラメータをチェック（マジックリンクの場合）
+      this.handleMagicLinkAuth();
+
       // 認証・ペアリング確認
       console.log('認証チェック開始...');
       await this.checkAuthAndPairing();
@@ -61,6 +64,22 @@ class CoupleRecipeApp {
     this.showScreen('pairing');
     this.setupEventListeners();
     this.showMessage('初期化に時間がかかっています。しばらくお待ちください。', 'info');
+  }
+
+  handleMagicLinkAuth() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    
+    if (accessToken) {
+      console.log('マジックリンクによる認証を検出');
+      // URLからパラメータをクリア
+      const url = new URL(window.location);
+      url.search = '';
+      window.history.replaceState({}, document.title, url.toString());
+      
+      this.showMessage('ログインしました！', 'success');
+    }
   }
 
   async checkAuthAndPairing() {
