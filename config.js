@@ -191,14 +191,17 @@ class AuthManager {
     }
   }
   
-  // アカウント変換（匿名→メール認証）
-  async convertAnonymousAccount(email, password) {
+  // アカウント変換（匿名→メール認証） - パスワードレス対応
+  async convertAnonymousAccount(email) {
     if (!supabaseClient || !this.currentUser) return { error: 'ユーザーが見つかりません' };
     
     try {
-      // 匿名ユーザーの場合は、メールのみ設定してパスワードは新規作成時のみ
-      const { data, error } = await supabaseClient.auth.updateUser({
-        email: email
+      // 匿名ユーザーからマジックリンク認証に変換
+      const { data, error } = await supabaseClient.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
       
       if (error) {
@@ -207,12 +210,10 @@ class AuthManager {
       }
       
       if (APP_CONFIG.debug) {
-        console.log('アカウント変換成功:', this.currentUserId);
-        console.log('確認メール送信先:', email);
-        console.log('メール確認状態:', data.user?.email_confirmed_at);
+        console.log('アカウント変換用マジックリンク送信成功:', email);
       }
       
-      return { user: data.user, emailSent: true };
+      return { success: true, email: email };
       
     } catch (error) {
       console.error('アカウント変換エラー:', error);
@@ -438,4 +439,17 @@ const DatabaseHelper = {
         console.error('献立取得エラー:', error);
         return [];
       }
- 
+      
+      return data || [];
+    } catch (error) {
+      console.error('献立取得エラー:', error);
+      return [];
+    }
+  }
+};
+
+// グローバルに公開
+window.APP_CONFIG = APP_CONFIG;
+window.AuthManager = AuthManager;
+window.DatabaseHelper = DatabaseHelper;
+window.initializeSupabase = initializeSupabase;

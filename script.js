@@ -440,30 +440,10 @@ class CoupleRecipeApp {
       const nickname = document.getElementById('user-nickname')?.value;
       const role = document.querySelector('input[name="user-role"]:checked')?.value;
       const email = document.getElementById('user-email')?.value?.trim();
-      const password = document.getElementById('user-password')?.value;
-      const passwordConfirm = document.getElementById('user-password-confirm')?.value;
       
       if (!nickname || !role) {
         this.showMessage('ニックネームと役割を入力してください', 'error');
         return;
-      }
-      
-      // メール認証のバリデーション（入力がある場合のみ）
-      if (email || password || passwordConfirm) {
-        if (!email || !password || !passwordConfirm) {
-          this.showMessage('メールアドレス、パスワード、パスワード確認をすべて入力してください', 'error');
-          return;
-        }
-        
-        if (password !== passwordConfirm) {
-          this.showMessage('パスワードが一致しません', 'error');
-          return;
-        }
-        
-        if (password.length < 8) {
-          this.showMessage('パスワードは8文字以上で入力してください', 'error');
-          return;
-        }
       }
       
       // プロフィール保存
@@ -476,17 +456,14 @@ class CoupleRecipeApp {
       
       // メール認証設定がある場合はアカウント変換
       if (email) {
-        const convertResult = await this.authManager.convertAnonymousAccount(email, password);
+        const convertResult = await this.authManager.convertAnonymousAccount(email);
         
         if (convertResult.error) {
           this.showMessage(`メール認証の設定に失敗しました: ${convertResult.error}`, 'warning');
           // プロフィール保存は成功しているので、警告レベルで続行
         } else {
-          const emailInfo = await this.authManager.checkEmailConfirmation();
-          console.log('メール確認状態:', emailInfo);
-          
-          if (convertResult.emailSent) {
-            this.showMessage(`プロフィールを保存し、${email}に確認メールを送信しました。メールが届かない場合はスパムフォルダもご確認ください。`, 'success');
+          if (convertResult.success) {
+            this.showMessage(`プロフィールを保存し、${email}にマジックリンクを送信しました。メールをご確認ください。`, 'success');
           } else {
             this.showMessage('プロフィールを保存しました。', 'success');
           }
@@ -728,27 +705,25 @@ class CoupleRecipeApp {
 
   async handleAccountConversion() {
     const email = document.getElementById('convert-email').value;
-    const password = document.getElementById('convert-password').value;
 
-    if (!email || !password) {
-      this.showMessage('メールアドレスとパスワードを入力してください', 'error');
+    if (!email) {
+      this.showMessage('メールアドレスを入力してください', 'error');
       return;
     }
 
     try {
-      const result = await this.authManager.convertAnonymousAccount(email, password);
+      const result = await this.authManager.convertAnonymousAccount(email);
       
       if (result.error) {
-        this.showMessage(`変換に失敗しました: ${result.error}`, 'error');
+        this.showMessage(`変換用リンクの送信に失敗しました: ${result.error}`, 'error');
         return;
       }
 
-      this.showMessage('アカウントの変換が完了しました', 'success');
-      await this.checkAuthAndPairing();
+      this.showMessage(`${email}にアカウント変換用のリンクを送信しました。メールをご確認ください。`, 'success');
       
     } catch (error) {
       console.error('変換エラー:', error);
-      this.showMessage('アカウント変換に失敗しました', 'error');
+      this.showMessage('アカウント変換用リンクの送信に失敗しました', 'error');
     }
   }
 
