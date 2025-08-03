@@ -27,8 +27,13 @@ class CoupleRecipeApp {
       }, 10000); // 10秒タイムアウト
       
       console.log('Supabase初期化中...');
-      await initializeSupabase();
-      console.log('Supabase初期化完了');
+      if (typeof initializeSupabase === 'function') {
+        await initializeSupabase();
+        console.log('Supabase初期化完了');
+      } else {
+        console.warn('initializeSupabase関数が見つかりません - config.jsを確認してください');
+        throw new Error('Supabase初期化に失敗しました');
+      }
       
       this.authManager = new AuthManager();
       console.log('AuthManager作成完了');
@@ -178,6 +183,7 @@ class CoupleRecipeApp {
     document.getElementById('back-to-options')?.addEventListener('click', () => this.showPairingOptions());
     document.getElementById('back-to-options-2')?.addEventListener('click', () => this.showPairingOptions());
     document.getElementById('start-app-btn')?.addEventListener('click', () => this.startApp());
+    document.getElementById('skip-pairing-btn')?.addEventListener('click', () => this.skipPairing());
 
     // ナビゲーション
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -569,6 +575,18 @@ class CoupleRecipeApp {
     console.log('アプリを開始');
     this.loadAppData();
     this.showScreen('main');
+  }
+
+  skipPairing() {
+    console.log('ペアリングをスキップしてアプリを開始');
+    this.showMessage('ひとりでアプリを使用します', 'info');
+    this.showScreen('main');
+    
+    // プロフィール設定を促す
+    setTimeout(() => {
+      this.showProfileModal();
+      this.showMessage('プロフィールを設定してください', 'info');
+    }, 1000);
   }
 
   showScreen(screenName) {

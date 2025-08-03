@@ -79,6 +79,19 @@ body {
     background: #B0B0B0;
 }
 
+.btn-outline {
+    background: transparent;
+    color: #4F8BE8;
+    border: 2px solid #4F8BE8;
+}
+
+.btn-outline:hover {
+    background: #4F8BE8;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(79, 139, 232, 0.3);
+}
+
 .btn-icon {
     width: 40px;
     height: 40px;
