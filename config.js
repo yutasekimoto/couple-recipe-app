@@ -211,10 +211,9 @@ class AuthManager {
     if (!supabaseClient || !this.currentUser) return { error: 'ユーザーが見つかりません' };
     
     try {
-      // 匿名ユーザーをメール認証に変換
+      // 匿名ユーザーの場合は、メールのみ設定してパスワードは新規作成時のみ
       const { data, error } = await supabaseClient.auth.updateUser({
-        email: email,
-        password: password
+        email: email
       });
       
       if (error) {

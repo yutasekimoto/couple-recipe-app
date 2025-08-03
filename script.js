@@ -471,14 +471,14 @@ class CoupleRecipeApp {
       }
       
       // メール認証設定がある場合はアカウント変換
-      if (email && password) {
+      if (email) {
         const convertResult = await this.authManager.convertAnonymousAccount(email, password);
         
         if (convertResult.error) {
           this.showMessage(`メール認証の設定に失敗しました: ${convertResult.error}`, 'warning');
           // プロフィール保存は成功しているので、警告レベルで続行
         } else {
-          this.showMessage('プロフィールを保存し、メール認証を設定しました', 'success');
+          this.showMessage('プロフィールを保存し、メール認証を設定しました。確認メールをチェックしてください。', 'success');
         }
       } else {
         this.showMessage('プロフィールを保存しました', 'success');
