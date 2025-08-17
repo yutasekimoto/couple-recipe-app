@@ -49,7 +49,18 @@ const APP_CONFIG = {
 async function initializeSupabase() {
   try {
     if (typeof supabase !== 'undefined' && supabase.createClient) {
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          // セッションを長期間維持（30日間）
+          persistSession: true,
+          storageKey: 'couple-recipe-auth',
+          storage: window.localStorage,
+          // 自動リフレッシュを有効化
+          autoRefreshToken: true,
+          // セッション検知を改善
+          detectSessionInUrl: true
+        }
+      });
       
       if (APP_CONFIG.debug) {
         console.log('Supabase初期化成功');
@@ -59,7 +70,10 @@ async function initializeSupabase() {
         // 接続テスト
         try {
           const { data, error } = await supabaseClient.auth.getSession();
-          console.log('Supabase接続テスト - セッション:', !!data, error?.message || 'OK');
+          console.log('Supabase接続テスト - セッション:', !!data?.session, error?.message || 'OK');
+          if (data?.session) {
+            console.log('既存セッション検出:', data.session.user?.email || 'anonymous');
+          }
         } catch (testError) {
           console.warn('Supabase接続テストエラー:', testError);
         }
@@ -84,19 +98,46 @@ class AuthManager {
     this.pairedUserId = null;
   }
   
-  // 既存セッション確認
+  // 既存セッション確認（改善版）
   async checkExistingSession() {
     if (!supabaseClient) return null;
     
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      // セッション情報を取得
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      
+      if (error) {
+        console.warn('セッション取得エラー:', error);
+        return null;
+      }
       
       if (session?.user) {
         this.currentUser = session.user;
         this.currentUserId = session.user.id;
         
+        // セッションの有効期限をチェック
+        const expiresAt = new Date(session.expires_at * 1000);
+        const now = new Date();
+        const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+        
         if (APP_CONFIG.debug) {
-          console.log('既存セッション:', this.currentUserId);
+          console.log('既存セッション検出:', {
+            userId: this.currentUserId,
+            email: session.user.email || 'anonymous',
+            expiresAt: expiresAt.toLocaleString(),
+            timeUntilExpiry: Math.round(timeUntilExpiry / 1000 / 60 / 60) + '時間'
+          });
+        }
+        
+        // セッションが24時間以内に期限切れになる場合は自動更新
+        if (timeUntilExpiry < 24 * 60 * 60 * 1000) {
+          console.log('セッション自動更新中...');
+          const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
+          if (refreshError) {
+            console.warn('セッション更新エラー:', refreshError);
+          } else {
+            console.log('セッション更新成功');
+          }
         }
         
         return session.user;

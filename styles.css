@@ -1610,4 +1610,16 @@ body {
 }
 
 .form-section h4 {
-    font-si
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.form-description {
+    font-size: 14px;
+    color: #666666;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+

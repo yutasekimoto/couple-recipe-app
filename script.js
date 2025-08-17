@@ -91,19 +91,21 @@ class CoupleRecipeApp {
       const savedUserId = localStorage.getItem('couple_app_user_id');
       console.log('保存されたユーザーID:', savedUserId);
       
-      // まず既存セッションを確認
+      // まず既存セッションを確認（優先）
       console.log('既存セッション確認中...');
       let user = await this.authManager.checkExistingSession();
       
-      if (!user) {
+      if (user) {
+        console.log('既存セッション確認完了 - ログイン状態維持');
+        // セッションが有効な場合、ログイン成功メッセージを表示
+        this.showMessage('ログイン状態を維持しています', 'success');
+      } else {
         console.log('既存セッションなし - 匿名認証開始...');
         // 既存セッションがない場合は匿名認証
         user = await Promise.race([
           this.authManager.signInAnonymously(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('認証タイムアウト')), 8000))
         ]);
-      } else {
-        console.log('既存セッション確認完了');
       }
       
       if (!user) {
@@ -799,6 +801,13 @@ class CoupleRecipeApp {
   }
 
   async handleLogout() {
+    // 確認ダイアログを表示
+    const confirmed = confirm('本当にログアウトしますか？\n\n次回アクセス時に再度ログインが必要になります。');
+    
+    if (!confirmed) {
+      return; // ユーザーがキャンセルした場合
+    }
+
     try {
       const result = await this.authManager.signOut();
       
@@ -809,8 +818,9 @@ class CoupleRecipeApp {
 
       // ローカルデータをクリア
       localStorage.removeItem('couple_app_user_id');
+      localStorage.removeItem('couple-recipe-auth'); // セッション情報もクリア
       
-      this.showMessage('ログアウトしました', 'success');
+      this.showMessage('ログアウトしました。次回アクセス時に再度ログインしてください。', 'success');
       
       // 初期状態にリセット
       this.currentUser = null;
@@ -821,7 +831,7 @@ class CoupleRecipeApp {
       // ペアリング画面に戻る
       setTimeout(() => {
         this.showScreen('pairing');
-      }, 1000);
+      }, 1500);
       
     } catch (error) {
       console.error('ログアウトエラー:', error);
