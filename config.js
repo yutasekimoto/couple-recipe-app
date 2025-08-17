@@ -53,6 +53,16 @@ async function initializeSupabase() {
       
       if (APP_CONFIG.debug) {
         console.log('Supabase初期化成功');
+        console.log('Supabase URL:', SUPABASE_URL);
+        console.log('Supabase Client Status:', !!supabaseClient);
+        
+        // 接続テスト
+        try {
+          const { data, error } = await supabaseClient.auth.getSession();
+          console.log('Supabase接続テスト - セッション:', !!data, error?.message || 'OK');
+        } catch (testError) {
+          console.warn('Supabase接続テストエラー:', testError);
+        }
       }
       
       return supabaseClient;
@@ -101,9 +111,11 @@ class AuthManager {
   
   // マジックリンクでメール認証（パスワードレス）
   async signInWithEmail(email) {
-    if (!supabaseClient) return null;
+    if (!supabaseClient) return { error: 'Supabaseクライアントが初期化されていません' };
     
     try {
+      console.log('マジックリンク送信開始:', email);
+      
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
@@ -113,17 +125,23 @@ class AuthManager {
       
       if (error) {
         console.error('マジックリンク送信エラー:', error);
+        if (error.status === 503) {
+          return { error: 'サービスが一時的に利用できません。しばらく待ってから再度お試しください。' };
+        }
         return { error: error.message };
       }
       
       if (APP_CONFIG.debug) {
-        console.log('マジックリンク送信成功:', email);
+        console.log('マジックリンク送信成功:', email, data);
       }
       
       return { success: true, email: email };
       
     } catch (error) {
       console.error('マジックリンク送信エラー:', error);
+      if (error.status === 503 || error.message?.includes('503')) {
+        return { error: 'サービスが一時的に利用できません。しばらく待ってから再度お試しください。' };
+      }
       return { error: error.message };
     }
   }
