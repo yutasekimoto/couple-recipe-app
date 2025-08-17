@@ -12,6 +12,7 @@ class CoupleRecipeApp {
     this.mealPlans = [];
     this.pendingMealPlan = null; // 献立作成中のレシピ追加用
     this.hiddenMealSlots = new Set(); // 非表示にした献立枠を管理
+    this.lastMagicLinkSent = 0; // マジックリンク送信時刻を追跡
     
     this.init();
   }
@@ -680,20 +681,71 @@ class CoupleRecipeApp {
       return;
     }
 
+    // 21秒制限をクライアント側でチェック
+    const now = Date.now();
+    const timeSinceLastSent = now - this.lastMagicLinkSent;
+    if (timeSinceLastSent < 21000) {
+      const remainingTime = Math.ceil((21000 - timeSinceLastSent) / 1000);
+      this.showMessage(`送信間隔が短すぎます。${remainingTime}秒後に再度お試しください。`, 'warning');
+      return;
+    }
+
+    const submitButton = document.querySelector('#login-form-element button[type="submit"]');
+    const originalText = submitButton.textContent;
+    
     try {
+      // ボタンを無効化
+      submitButton.disabled = true;
+      submitButton.textContent = '送信中...';
+      
       const result = await this.authManager.signInWithEmail(email);
       
       if (result.error) {
-        this.showMessage(`マジックリンクの送信に失敗しました: ${result.error}`, 'error');
+        if (result.error.includes('21 seconds')) {
+          this.showMessage('送信間隔が短すぎます。21秒後に再度お試しください。', 'warning');
+        } else {
+          this.showMessage(`マジックリンクの送信に失敗しました: ${result.error}`, 'error');
+        }
         return;
       }
 
+      // 送信成功時刻を記録
+      this.lastMagicLinkSent = now;
       this.showMessage(`${email}にログイン用のリンクを送信しました。メールをご確認ください。`, 'success');
+      
+      // 21秒間ボタンを無効化
+      this.startMagicLinkCooldown(submitButton, originalText);
       
     } catch (error) {
       console.error('マジックリンク送信エラー:', error);
-      this.showMessage('マジックリンクの送信に失敗しました', 'error');
+      if (error.message && error.message.includes('21 seconds')) {
+        this.showMessage('送信間隔が短すぎます。21秒後に再度お試しください。', 'warning');
+      } else {
+        this.showMessage('マジックリンクの送信に失敗しました', 'error');
+      }
+    } finally {
+      // エラー時は即座にボタンを復活
+      if (!submitButton.disabled || !submitButton.textContent.includes('秒後')) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
     }
+  }
+
+  startMagicLinkCooldown(button, originalText) {
+    let remaining = 21;
+    button.textContent = `${remaining}秒後に再送信可能`;
+    
+    const countdown = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        button.textContent = `${remaining}秒後に再送信可能`;
+      } else {
+        button.disabled = false;
+        button.textContent = originalText;
+        clearInterval(countdown);
+      }
+    }, 1000);
   }
 
   async handleRegister() {
